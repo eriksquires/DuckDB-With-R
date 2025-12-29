@@ -206,11 +206,26 @@ migrations in R (or Python for that matter) you may be much better off
 managing your data herding with dbt. Think of it as Terraform for your
 data.
 
-The thing dbt won’t do is ETL from another warehouse, it only works
-within 1 database/warehouse. However, once you have your initial data it
-does a fantastic job of managing table updates and views and will make
-it easy to move your db out of duck and into a shared corporate
-datastore.
+## Maybe don’t ETL
+
+A feature to lean into is that dbt and duckdb have extentions to read
+external databases (postgres, mysql, etc), files (parquet, csv, etc.)
+and remote sources via httpfs. These may eliminate the initial need to
+do an external ETL and keep your work 100% inside of duckdb and by
+extension in dbt.
+
+Postgres has similar capabilities so look into the Foreign Data Wrapper.
+
+Regardless of your data lake or desktop DB these options are all worth
+considering before reinventing the wheel with custom, brittle ETL
+scripts.
+
+## Data Transformation
+
+dbt is mainly for working inside a single database/warehouse. However,
+once you have your initial data it does a fantastic job of managing
+table updates and views and will make it easy to move your db out of
+duck and into a shared corporate datastore.
 
 dbt and your database are the right places to do data aggregation and
 data flows. If you find yourself doing sums, averages, percentiles, and
@@ -222,16 +237,22 @@ Where you want to keep R is in your statistical analysis, plotting,
 anything more complicated than calculating standard deviations. lm(),
 prophet, SARIMAX, estimating a t-distribution all belong in R.
 
-## Maybe don’t ETL
+# Postgres or DuckDB?
 
-Another feature to lean into is that dbt and duckdb has extentions to
-read external databases (postgres, mysql, etc), files (parquet, csv,
-etc.) and remote sources via httpfs. These may eliminate the initial
-need to do an external ETL and keep your work 100% inside of duckdb and
-by extension in dbt.
+There are many ways in which these two db’s can overlap. We can argue
+performance, but for me the real issue is the configuration and set up
+time. If you already have a PostgresDB and want to keep using it, please
+go ahead. Where duckdb shines is in going from zero to OLAP DB in a
+single line of R code. Users? Privileges? Haha! We don’t need no
+stinking user accounts. Tablespaces? Hahaha, that’s what we call the db
+file. Growth management… why?
 
-Postgres has similar capabilities so look into the Foreign Data Wrapper.
+In all these ways DuckDB is the superior, single laptop analytical
+choice. The one and only one area I know of where Postgres, or Maria or
+any other RDBMS really can claim superiority is in managing multiple
+read write connections.
 
-Regardless of your data lake or desktop DB these options are all worth
-considering before reinventing the wheel with custom, brittle ETL
-scripts.
+It is a perfectly reasonable approach to nurture your data science
+process With R and duckdb first, maybe adding dbt later as your scripts
+and data flows mature before pushing the ecosystem into a shared
+database.
