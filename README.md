@@ -220,3 +220,13 @@ consistent you are 100% in the land of dbt.
 Where you want to keep R is in your statistical analysis, plotting,
 anything more complicated than calculating standard deviations. lm(),
 prophet, SARIMAX, estimating a t-distribution all belong in R.
+
+## Maybe don’t ETL
+
+Another feature to lean into is that duckdb has extentions to read
+external databases (postgres, mysql, etc), files (parquet, csv, etc.)
+and remote sources via httpfs. These may eliminate the initial need to
+do an external ETL and keep your work 100% inside of duckdb and by
+extension in dbt.
+
+Postgres has similar capabilities so look into the Foreign Data Wrapper.
