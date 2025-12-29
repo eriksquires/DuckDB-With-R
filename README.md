@@ -202,8 +202,9 @@ really accelerate your work and keep your memory footprint down.
 # Maybe don’t use R
 
 If you find yourself doing ETL, then a number of data aggregations /
-migrations you may be much better off managing your data herding with
-dbt. Think of it as Terraform for your data.
+migrations in R (or Python for that matter) you may be much better off
+managing your data herding with dbt. Think of it as Terraform for your
+data.
 
 The thing dbt won’t do is ETL from another warehouse, it only works
 within 1 database/warehouse. However, once you have your initial data it
