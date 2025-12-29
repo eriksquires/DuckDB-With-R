@@ -181,6 +181,22 @@ func_b <- function (a, b, c) {
 df <- func_b(4,5,6)
 ```
 
+To be clear, you can’t write data with a read only connection. The
+reason I propose this pattern is that it allows you to write modular
+functions that can be reused in multiple scripts without worrying about
+whether the connection is already open or not. Each function opens and
+closes its own connection as needed. Since duckdb connections are so
+fast this is not a performance issue.
+
+When you do need to write data, use duck_connect_rw() to get a
+read/write connection. Just make sure that no other rw connections are
+open at the same time. Usually we’ll find that we only need to write
+data towards the end of a process after all the analysis is done.
+
+If you find yourself using R for ETL and data migration/tansformation
+before your real work can begin, you may want to consider using dbt
+instead. See the section below.
+
 # Minimum R Script
 
 ``` r
@@ -231,7 +247,10 @@ dbt and your database are the right places to do data aggregation and
 data flows. If you find yourself doing sums, averages, percentiles, and
 various joins with categorical tables, or you’ve already found yourself
 making views and stored procedures to make your R code simpler and more
-consistent you are 100% in the land of dbt.
+consistent you are 100% in the land of dbt. Even if you are not ready
+for dbt yet, pushing transformations into views instead of R code is a
+big improvement in terms of performance and maintainability. You can
+always migrate those views into dbt models later.
 
 Where you want to keep R is in your statistical analysis, plotting,
 anything more complicated than calculating standard deviations. lm(),
