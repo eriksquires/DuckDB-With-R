@@ -245,7 +245,9 @@ time. If you already have a PostgresDB and want to keep using it, please
 go ahead. Where duckdb shines is in going from zero to OLAP DB in a
 single line of R code. Users? Privileges? Haha! We don’t need no
 stinking user accounts. Tablespaces? Hahaha, that’s what we call the db
-file. Growth management… why?
+file. Growth management… why? You need backups? Google drive!!
+
+\[\[ Insert Dread Pirate Roberts flag here \]\]
 
 In all these ways DuckDB is the superior, single laptop analytical
 choice. The one and only one area I know of where Postgres, or Maria or
