@@ -37,8 +37,8 @@ Together these offer a problem and an opportunity.
 I found myself using my personal DB in a variety of different projects.
 Also, I wrote ETL scripts that would incrementally update a number of
 tables in them. For this I found it easier to keep the database itself
-in ~/db/ but use a soft link in each R project. Make sure to add \*.db
-to .gitignore.
+in ~/db/ but use a soft link in each R project. Make sure to add
+\*\*/db/ to .gitignore.
 
 ``` bash
 $ cd /dev/my_r_project
