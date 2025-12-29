@@ -2,7 +2,7 @@
 Erik Squires
 
 Here’s a few quality of life tips I’ve gathered from working with R,
-RStudio and duckdb. I hope you find them useful.
+RStudio and DuckDB. I hope you find them useful.
 
 ## Introduction
 
@@ -34,11 +34,13 @@ Together these offer a problem and an opportunity.
 
 ## DB Setup
 
-I found myself using my personal DB in a variety of different projects.
-Also, I wrote ETL scripts that would incrementally update a number of
-tables in them. For this I found it easier to keep the database itself
-in ~/db/ but use a soft link in each R project. Make sure to add
-\*\*/db/ to .gitignore.
+I found myself using my personal DuckDB instance in a variety of
+different projects. I wrote ETL scripts that would incrementally update
+a number of tables in the db but whose results were used in many
+separate forecasting projects. It was easier to keep the database itself
+in ~/db/ but use a soft link in each R project.
+
+Make sure to add **\*\*/db/** to .gitignore.
 
 ``` bash
 $ cd /dev/my_r_project
@@ -54,12 +56,12 @@ default configuration unless otherwise told to. Here’s an example:
 
 ``` yaml
 default:
-  duckdb:
+  DuckDB:
     path: "db"
     name: "dev.duckdb"
 
 production:
-  duckdb:
+  DuckDB:
     path: "db"
     name: "prod.duckdb"
 ```
@@ -76,7 +78,7 @@ config.yml above we can use:
 
 cfg <- config::get()
 
-db_file <- here::here(cfg$duckdb$path, cfg$duckdb$name)
+db_file <- here::here(cfg$DuckDB$path, cfg$DuckDB$name)
 ```
 
 here() returns the root of your R project, no matter what file you are
@@ -100,8 +102,8 @@ environment:
 
 The one major annoyance of DuckDB is that it only allows a single
 read/write connection, however it allows any number of simultaneous read
-only connections. This is not a problemm for simple scripts that open
-one connection at the top, reuse it throughout and then close before
+only connections. This is not a problem for simple scripts that open one
+connection at the top, reuse it throughout and then close before
 quitting. Unfortunately this leads us to a problem with attempting to
 write modular, reusable function libraries. We are left having to create
 some mechanism to test whether the connection has been opened or not in
@@ -111,7 +113,7 @@ connections by default in granular ways. For instance:
 
 ``` r
 # Define read only and read/write functions for connection management
-# Important that they test the db file location.  With Duckdb, if its' not there
+# Important that they test the db file location.  With DuckDB, if its' not there
 # dbConnect() will create the file, leading you down a wild goose chase. 
 # The file will exist, but your db will be empty, giving you a panic attack
 # when you attempt to debug the problem. 
@@ -124,7 +126,7 @@ library(duckdb)
 
 duck_connect_ro <- function() {
   cfg <- config::get()
-  db_name <- here::here(cfg$duckdb$path, cfg$duckdb$name)
+  db_name <- here::here(cfg$DuckDB$path, cfg$DuckDB$name)
   # Return null if db_name does not exist
   
   if (!file.exists(db_name)) {
@@ -137,7 +139,7 @@ duck_connect_ro <- function() {
 
 duck_connect_rw <- function() {
   cfg <- config::get()
-  db_name <- here::here(cfg$duckdb$path, cfg$duckdb$name)
+  db_name <- here::here(cfg$DuckDB$path, cfg$DuckDB$name)
   # Return null if db_name does not exist
   
   if (!file.exists(db_name)) {
@@ -185,7 +187,7 @@ To be clear, you can’t write data with a read only connection. The
 reason I propose this pattern is that it allows you to write modular
 functions that can be reused in multiple scripts without worrying about
 whether the connection is already open or not. Each function opens and
-closes its own connection as needed. Since duckdb connections are so
+closes its own connection as needed. Since DuckDB connections are so
 fast this is not a performance issue.
 
 When you do need to write data, use duck_connect_rw() to get a
@@ -193,7 +195,7 @@ read/write connection. Just make sure that no other rw connections are
 open at the same time. Usually we’ll find that we only need to write
 data towards the end of a process after all the analysis is done.
 
-If you find yourself using R for ETL and data migration/tansformation
+If you find yourself using R for ETL and data migration/transformation
 before your real work can begin, you may want to consider using dbt
 instead. See the section below.
 
@@ -204,8 +206,8 @@ library(DBI)
 library(duckdb) # <-- Important for RStudio connection panel to work correctly
 library(tidyverse)
 # Optional either of:
-# library(duckplyr) <-- More duckdb features but may not work everywhere dbplyr does.
-# library(dbplyr)   <-- Reliable but not duckdb aware
+# library(duckplyr) <-- More DuckDB features but may not work everywhere dbplyr does.
+# library(dbplyr)   <-- Reliable but not DuckDB aware
 
 # Loads our duck_connect_xx() functions
 source(here::here("lib", "db_funcs.R"))
@@ -224,10 +226,10 @@ data.
 
 ## Maybe don’t ETL
 
-A feature to lean into is that dbt and duckdb have extentions to read
+A feature to lean into is that dbt and DuckDB have extensions to read
 external databases (postgres, mysql, etc), files (parquet, csv, etc.)
 and remote sources via httpfs. These may eliminate the initial need to
-do an external ETL and keep your work 100% inside of duckdb and by
+do an external ETL and keep your work 100% inside of DuckDB and by
 extension in dbt.
 
 Postgres has similar capabilities so look into the Foreign Data Wrapper.
@@ -261,7 +263,7 @@ prophet, SARIMAX, estimating a t-distribution all belong in R.
 There are many ways in which these two db’s can overlap. We can argue
 performance, but for me the real issue is the configuration and set up
 time. If you already have a PostgresDB and want to keep using it, please
-go ahead. Where duckdb shines is in going from zero to OLAP DB in a
+go ahead. Where DuckDB shines is in going from zero to OLAP DB in a
 single line of R code. Users? Privileges? Haha! We don’t need no
 stinking user accounts. Tablespaces? Hahaha, that’s what we call the db
 file. Growth management… why? You need backups? Google drive!!
@@ -269,12 +271,12 @@ file. Growth management… why? You need backups? Google drive!!
 <img src="images/pirate_flag.png" style="width:50.0%"
 alt="Pirate Flag" />
 
-In all these ways DuckDB is the superior, single laptop analytical
-choice. The one and only one area I know of where Postgres, or Maria or
-any other RDBMS really can claim superiority is in managing multiple
-read write connections.
+In all these ways DuckDB is the superior, single laptop choice. The one
+and only one area I know of where Postgres, or Maria or any other RDBMS
+really can claim superiority is in managing multiple read write
+connections.
 
 It is a perfectly reasonable approach to nurture your data science
-process With R and duckdb first, maybe adding dbt later as your scripts
+process With R and DuckDB first, maybe adding dbt later as your scripts
 and data flows mature before pushing the ecosystem into a shared
 database.
