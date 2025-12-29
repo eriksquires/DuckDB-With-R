@@ -224,10 +224,14 @@ prophet, SARIMAX, estimating a t-distribution all belong in R.
 
 ## Maybe don’t ETL
 
-Another feature to lean into is that duckdb has extentions to read
-external databases (postgres, mysql, etc), files (parquet, csv, etc.)
-and remote sources via httpfs. These may eliminate the initial need to
-do an external ETL and keep your work 100% inside of duckdb and by
-extension in dbt.
+Another feature to lean into is that dbt and duckdb has extentions to
+read external databases (postgres, mysql, etc), files (parquet, csv,
+etc.) and remote sources via httpfs. These may eliminate the initial
+need to do an external ETL and keep your work 100% inside of duckdb and
+by extension in dbt.
 
 Postgres has similar capabilities so look into the Foreign Data Wrapper.
+
+Regardless of your data lake or desktop DB these options are all worth
+considering before reinventing the wheel with custom, brittle ETL
+scripts.
