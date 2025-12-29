@@ -128,7 +128,7 @@ duck_connect_ro <- function() {
   # Return null if db_name does not exist
   
   if (!file.exists(db_name)) {
-    warn("DuckDB database does not exist at {db_name}")
+    warning("DuckDB database does not exist at {db_name}")
     return(NULL)
   }
   con <- dbConnect(duckdb(), dbdir= db_name, read_only = TRUE)
@@ -141,7 +141,7 @@ duck_connect_rw <- function() {
   # Return null if db_name does not exist
   
   if (!file.exists(db_name)) {
-    warn("DuckDB database does not exist at {db_name}")
+    warning("DuckDB database does not exist at {db_name}")
     return(NULL)
   }
   con <- dbConnect(duckdb(), dbdir= db_name, read_only = FALSE)
