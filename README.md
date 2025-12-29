@@ -1,8 +1,6 @@
 # DuckDB_R_Tips
 Erik Squires
 
-# DuckDB R Tips
-
 Here’s a few quality of life tips I’ve gathered from working with R,
 RStudio and duckdb. I hope you find them useful.
 
@@ -190,8 +188,8 @@ library(DBI)
 library(duckdb) # <-- Important for RStudio connection panel to work correctly
 library(tidyverse)
 # Optional either of:
-# library(duckplyr) <-- new but growing
-# library(dbplyr) <-- solid but less full featured
+# library(duckplyr) <-- More duckdb features but may not work everywhere dbplyr does.
+# library(dbplyr)   <-- Reliable but not duckdb aware
 
 # Loads our duck_connect_xx() functions
 source(here::here("lib", "db_funcs.R"))
@@ -200,3 +198,25 @@ source(here::here("lib", "db_funcs.R"))
 If you are not already familiar with dbplyr/duckplyr you should be. They
 push a lot of the work of dplyr down to the database level which can
 really accelerate your work and keep your memory footprint down.
+
+# Maybe don’t use R
+
+If you find yourself doing ETL, then a number of data aggregations /
+migrations you may be much better off managing your data herding with
+dbt. Think of it as Terraform for your data.
+
+The thing dbt won’t do is ETL from another warehouse, it only works
+within 1 database/warehouse. However, once you have your initial data it
+does a fantastic job of managing table updates and views and will make
+it easy to move your db out of duck and into a shared corporate
+datastore.
+
+dbt and your database are the right places to do data aggregation and
+data flows. If you find yourself doing sums, averages, percentiles, and
+various joins with categorical tables, or you’ve already found yourself
+making views and stored procedures to make your R code simpler and more
+consistent you are 100% in the land of dbt.
+
+Where you want to keep R is in your statistical analysis, plotting,
+anything more complicated than calculating standard deviations. lm(),
+prophet, SARIMAX, estimating a t-distribution all belong in R.
