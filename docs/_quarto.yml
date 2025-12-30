@@ -1,0 +1,3 @@
+project:
+  post-render:
+    - cp DuckDB_R_Tips.md ../README.md
