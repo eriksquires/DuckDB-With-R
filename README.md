@@ -302,7 +302,7 @@ Another point is that dbt knows about dependencies between models and
 will build them in the correct order. This is a big help when you have
 many interdependent views and tables. This is no longer something you
 have to bake into your R code. Consider a situation when you have to run
-R in the middle. Let’s say it’s a forecast. Table C relieas on tables A
+R in the middle. Let’s say it’s a forecast. Table C relies on tables A
 and B already being built. Table D is built by R and several tables (E,
 F, etc) depend on D. You can manage this easily with dbt and R like so:
 
