@@ -45,7 +45,14 @@ with the following separation of concerns:
 - One R project was strictly for incremental ETL. One script per table,
   and a master ETL script I could quickly comment tables in/out.
 
-- Many forecasting and analysis jobs shared the db.
+- Many R projects shared the same db.
+
+You may ask, why not just keep all my forecasts in one R project. They
+were pretty wildly different and complicated, as well as would be handed
+off to different teams for consumption. Attempting to put all R, and
+reports in one project would not have been something I could manage
+well, or explain to anyone. It would have been like storing all your
+files in your root directory.
 
 Though I only had a single db copy I used a soft link in each R project
 folder, which I demonstrate below. Make sure to add **\*\*/db/** to
@@ -93,7 +100,7 @@ cfg <- config::get()
 db_file <- here::here(cfg$DuckDB$path, cfg$DuckDB$name)
 ```
 
-I also like to use **here() which** returns the root of your R project,
+I also like to use **here()** which returns the root of your R project,
 no matter what file you are in, and works in R, Rmd and Qmd files
 reliably. This alone solves a lot of problems in maintaining your docs/
 files consistent and source() libraries. Parameters are concatenated
