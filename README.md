@@ -245,16 +245,19 @@ data.
 
 ## Maybe don’t ETL
 
-A feature to lean into is that dbt, DuckDB, and Postgres have extensions
-to read external databases (postgres, mysql, etc), files (parquet, csv,
-etc.) and remote sources via httpfs. These may eliminate the initial
-need to do an external ETL and keep your work 100% inside of DuckDB and
-by extension in dbt. Postgres, as an example, has at least a Foreign
+Common DB features to lean into is that modern RDBMS systems usually
+include extensions to read external databases directly. DuckDB for
+instance can connect to remote DBs (postgres, mysql, etc), files
+(parquet, csv, etc.) and remote sources via httpfs. These may eliminate
+the initial need to do an external ETL and keep your work 100% inside of
+DuckDB and by extension in dbt. Postgres, as an example, has a Foreign
 Data Wrapper which serves this purpose nicely.
 
 Regardless of your data lake or desktop DB these options are all worth
 considering before reinventing the wheel with custom, brittle ETL
-scripts. Connections are a lot better than ETL jobs.
+scripts. I cannot stress this enough: **Data Connections are much more
+reliable and less mainetnance than external, script driven (python,
+bash, Perl, R) ETL jobs.**
 
 ## Data Transformation
 
