@@ -250,13 +250,22 @@ really accelerate your work and keep your memory footprint down.
 
 ## Maybe don’t ETL
 
-Common DB features to lean into is that modern RDBMS systems usually
-include extensions to read external databases directly. DuckDB for
-instance can connect to remote DBs (postgres, mysql, etc), files
-(parquet, csv, etc.) and remote sources via httpfs. These may eliminate
-the initial need to do an external ETL and keep your work 100% inside of
-DuckDB and by extension in dbt. Postgres, as an example, has a Foreign
-Data Wrapper which serves this purpose nicely.
+One of the first things we need to do is get raw, dirty data. This is
+often done with custom ETL scripts (in python, R, Perl, bash, Ruby,
+etc.) which read from external databases, files, APIs and other sources
+and put them somwhere R can get to them. While this is a very common
+approach it does have some downsides. Custom ETL scripts are often
+brittle, require maintenance and monitoring, and can be difficult to
+share with colleagues.
+
+Before writing and maintaining ETL scripts you should consider that most
+modern RDBMS systems usually include extensions to read external
+databases directly. DuckDB for instance can connect to remote DBs
+(postgres, mysql, etc), files (parquet, csv, etc.) and remote sources
+via httpfs. These may eliminate the initial need to do an external ETL
+and keep your work 100% inside of DuckDB and by extension in dbt.
+Postgres, as an example, has a Foreign Data Wrapper which serves this
+purpose nicely.
 
 Regardless of your data lake or desktop DB these options are all worth
 considering before reinventing the wheel with custom, brittle ETL
@@ -266,19 +275,22 @@ bash, Perl, R) ETL jobs.**
 
 ## Maybe don’t use R for Data Transformation
 
+A database is the right places to do data aggregation and data flows. If
+you find yourself doing sums, averages, percentiles, and various joins
+with categorical tables, or you’ve already found yourself making views
+and stored procedures to make your R code simpler and more consistent
+you are 100% in the land of databases and dbt (data build tool). Even if
+you are not ready for dbt yet, pushing transformations into views
+instead of R code is a big improvement in terms of performance and
+maintainability. You can always migrate those views into dbt models
+later.
+
 dbt is for working inside a single database/warehouse and once you have
 your initial data it does a fantastic job of managing table updates and
 views and will make it easy to move your db out of duck and into a
-shared corporate datastore.
-
-dbt and your database are the right places to do data aggregation and
-data flows. If you find yourself doing sums, averages, percentiles, and
-various joins with categorical tables, or you’ve already found yourself
-making views and stored procedures to make your R code simpler and more
-consistent you are 100% in the land of dbt. Even if you are not ready
-for dbt yet, pushing transformations into views instead of R code is a
-big improvement in terms of performance and maintainability. You can
-always migrate those views into dbt models later.
+shared corporate datastore. One great feature is how it handles
+incremental models and incremental models that are eventually
+consistent.
 
 Where you want to keep R is in your statistical analysis, plotting,
 anything more complicated than calculating standard deviations. lm(),
