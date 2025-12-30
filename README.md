@@ -24,6 +24,25 @@ and/or multiple function libraries which access DuckDB data I think
 you’ll find my observations and tips useful. This will also help you
 make your R code easier to share with your colleagues.
 
+# Postgres or DuckDB?
+
+There are many ways in which these two DB’s can overlap. We can argue
+performance, but for me the real issue is the configuration and set up
+time. If you already have a PostgresDB and want to keep using it, please
+go ahead. Where DuckDB shines is in going from zero to OLAP DB in a
+single line of R code. Users? Privileges? Haha! We don’t need no
+stinking user accounts. Tablespaces? Hahaha, that’s what we call the db
+file. Growth management… why? You need backups? Google Drive!!
+
+<img src="images/pirate_flag.png" style="width:50.0%"
+alt="Pirate Flag" />
+
+In all these ways DuckDB is the superior, single laptop choice. The one
+and only one area I know of where Postgres, or Maria or any other RDBMS
+really can claim superiority is in supporting multiple read write
+connections. As of this writing, there is MotherDuck for collaboration
+but it still doesn’t support more than one writer at a time.
+
 # Observations
 
 - DuckDB connections are nearly instant
@@ -341,20 +360,4 @@ the fear of a merger but also by a desire to enhance the core
 functionality. Among the features being actively worked on is built-in
 extraction and load.
 
-# Postgres or DuckDB?
-
-There are many ways in which these two DB’s can overlap. We can argue
-performance, but for me the real issue is the configuration and set up
-time. If you already have a PostgresDB and want to keep using it, please
-go ahead. Where DuckDB shines is in going from zero to OLAP DB in a
-single line of R code. Users? Privileges? Haha! We don’t need no
-stinking user accounts. Tablespaces? Hahaha, that’s what we call the db
-file. Growth management… why? You need backups? Google Drive!!
-
-<img src="images/pirate_flag.png" style="width:50.0%"
-alt="Pirate Flag" />
-
-In all these ways DuckDB is the superior, single laptop choice. The one
-and only one area I know of where Postgres, or Maria or any other RDBMS
-really can claim superiority is in supporting multiple read write
-connections.
+# 
