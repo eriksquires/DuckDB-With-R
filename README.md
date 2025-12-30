@@ -126,7 +126,17 @@ connection at the top, reuse it throughout and then close before
 quitting. Unfortunately this leads us to a problem with attempting to
 write modular, reusable function libraries. We are left having to create
 some mechanism to test whether the connection has been opened or not in
-every single use. I propose that we take advantage of the fast
+every single use.
+
+This also becomes a problem when you are editing your schema, or viewing
+it in another tool like VS Code or the duckdb CLI and want to test your
+R scripts a line at a time. You end up loading the CLI, making your
+edit, exiting, then running your R code. Same thing happens if you are
+editing a Quarto/Rmd document, but still debugging your underlying
+libraries. The concurrency model can really get in your way without some
+careful management.
+
+To minimize this friction I propose that we take advantage of the fast
 open/close mechanics instead and get into the habit of using read-only
 connections by default in granular ways. For instance:
 
@@ -256,7 +266,7 @@ Data Wrapper which serves this purpose nicely.
 Regardless of your data lake or desktop DB these options are all worth
 considering before reinventing the wheel with custom, brittle ETL
 scripts. I cannot stress this enough: **Data Connections are much more
-reliable and less mainetnance than external, script driven (python,
+reliable and less maintenance than external, script driven (python,
 bash, Perl, R) ETL jobs.**
 
 ## Data Transformation
