@@ -249,10 +249,8 @@ A feature to lean into is that dbt, DuckDB, and Postgres have extensions
 to read external databases (postgres, mysql, etc), files (parquet, csv,
 etc.) and remote sources via httpfs. These may eliminate the initial
 need to do an external ETL and keep your work 100% inside of DuckDB and
-by extension in dbt.
-
-Postgres has at least a Foreign Data Wrapper which serves this purpose
-nicely.
+by extension in dbt. Postgres, as an example, has at least a Foreign
+Data Wrapper which serves this purpose nicely.
 
 Regardless of your data lake or desktop DB these options are all worth
 considering before reinventing the wheel with custom, brittle ETL
@@ -280,6 +278,14 @@ prophet, SARIMAX, estimating a t-distribution all belong in R. It is a
 perfectly reasonable approach to nurture your data science process With
 R and DuckDB first, maybe adding dbt later as your scripts and data
 flows mature before pushing the ecosystem into a shared database.
+
+## OpenDBT
+
+As I was interacting online I realized there’s [a fork of dbt called
+OpenDBT](https://github.com/memiiso/opendbt). This is driven partly by
+the fear of a merger but also by a desire to enhance the core
+functionality. Among the features being actively worked on is built-in
+extraction and load.
 
 # Postgres or DuckDB?
 
