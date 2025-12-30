@@ -140,12 +140,13 @@ environment:
 
 The one major annoyance of DuckDB is that it only allows a single
 read/write connection, however it allows any number of simultaneous read
-only connections. This is not a problem for simple scripts that open one
-connection at the top, reuse it throughout and then close before
-quitting. Unfortunately this leads us to a problem with attempting to
-write modular, reusable function libraries. We are left having to create
-some mechanism to test whether the connection has been opened or not in
-every single use.
+only connections. This is not a problem for one-page scripts that open
+one connection at the top, reuse it throughout and then close before
+quitting. Unfortunately this doesn’t hold up when we are managing
+complex work and need to write modular, reusable function libraries. Do
+you pass the connection around? If so who and what opens it with the
+correct write privileges? How many times must you check it to be sure?
+Are you checking it the right way?
 
 This also becomes a problem when you are editing your schema, or viewing
 it in another tool like VS Code or the duckdb CLI and want to test your
@@ -155,9 +156,10 @@ editing a Quarto/Rmd document, but still debugging your underlying
 libraries. The concurrency model can really get in your way without some
 careful management.
 
-To minimize this friction I propose that we take advantage of the fast
-open/close mechanics instead and get into the habit of using read-only
-connections by default in granular ways. For instance:
+To minimize both of these friction points at once I propose that we take
+advantage of the fast open/close mechanics instead and get into the
+habit of using read-only connections by default in granular ways. For
+instance:
 
 ``` r
 # Define read only and read/write functions for connection management
@@ -267,6 +269,20 @@ really accelerate your work and keep your memory footprint down.
 
 # Data Migration Tips
 
+Kind of related to using duckdb with R is the overall process of data
+transformation. If you are using duckdb (or any db really) with R you
+are already involved in extraction and loading or extraction,
+transformation and loading (ETL). Somehow you have to go from data which
+comes from a primary source to data which your analysis and analytical
+models can take advantage of. In addition to the work you care about you
+may also be responsible for moving the data along to others to use with
+BI tools instead of R or Python.
+
+The modern data scientist/analytics engineer has to fend for themselves
+more often than not. It is rare we have the luxury of a data team to
+just hand us tables on a silver platter. If that is you and you have
+started going down the road of self sufficiency I have some pointers.
+
 ## Maybe don’t ETL
 
 One of the first things we need to do is get raw, dirty data. This is
@@ -359,5 +375,3 @@ OpenDBT](https://github.com/memiiso/opendbt). This is driven partly by
 the fear of a merger but also by a desire to enhance the core
 functionality. Among the features being actively worked on is built-in
 extraction and load.
-
-# 
