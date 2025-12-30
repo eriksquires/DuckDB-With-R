@@ -275,22 +275,22 @@ bash, Perl, R) ETL jobs.**
 
 ## Maybe don’t use R for Data Transformation
 
-A database is the right places to do data aggregation and data flows. If
-you find yourself doing sums, averages, percentiles, and various joins
-with categorical tables, or you’ve already found yourself making views
-and stored procedures to make your R code simpler and more consistent
-you are 100% in the land of databases and dbt (data build tool). Even if
-you are not ready for dbt yet, pushing transformations into views
-instead of R code is a big improvement in terms of performance and
-maintainability. You can always migrate those views into dbt models
-later.
+A database is the right places to do data aggregation and data
+migration. If you find yourself doing sums, averages, percentiles, and
+various joins with categorical tables, or you’ve found yourself making R
+function libraries to return consistent data sets you are 100% in the
+land of databases and dbt (data build tool). Even if you are not ready
+for dbt yet, pushing transformations into views instead of R code is a
+big improvement in terms of performance and maintainability. You can
+always migrate those views into dbt models later.
 
 dbt is for working inside a single database/warehouse and once you have
 your initial data it does a fantastic job of managing table updates and
 views and will make it easy to move your db out of duck and into a
 shared corporate datastore. One great feature is how it handles
 incremental models and incremental models that are eventually
-consistent.
+consistent. If you have hesitated to use a materialized view because of
+the maintenance overhead dbt can really help you there.
 
 Where you want to keep R is in your statistical analysis, plotting,
 anything more complicated than calculating standard deviations. lm(),
