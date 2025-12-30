@@ -302,7 +302,9 @@ Another point is that dbt knows about dependencies between models and
 will build them in the correct order. This is a big help when you have
 many interdependent views and tables. This is no longer something you
 have to bake into your R code. Consider a situation when you have to run
-R in the middle. Let’s say it’s a forecast.
+R in the middle. Let’s say it’s a forecast. Table C relieas on tables A
+and B already being built. Table D is built by R and several tables (E,
+F, etc) depend on D. You can manage this easily with dbt and R like so:
 
 ``` bash
 $dbt --select +C 
@@ -310,10 +312,12 @@ $Rscript run_forecast.R
 $dbt --select D+
 ```
 
-In the above example, dbt builds all dependencies of model C, then you
-run your R forecast which reads from C and writes to D, then dbt builds
-all models dependent on D. This is a very clean way to manage
-interleaved R and SQL work.
+In the above example, dbt builds all dependencies of model C (A and B),
+then you run your R forecast which reads from C and writes to D, then
+dbt builds all models dependent on D. This is a very clean way to manage
+interleaved R and SQL work. Of course you also sidestep any concurrency
+issues. Set dbt threads = 1 in profiles.yml to avoid any possible
+read/write conflicts, and let dbt manage the ordering of work in the db.
 
 Where you want to keep R is in your statistical analysis, plotting,
 anything more complicated than calculating standard deviations. lm(),

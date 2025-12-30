@@ -206,7 +206,7 @@ A database is the right places to do data aggregation and data migration. If you
 
 dbt is for working inside a single database/warehouse and once you have your initial data it does a fantastic job of managing table updates and views and will make it easy to move your db out of duck and into a shared corporate datastore. One great feature is how it handles incremental models and incremental models that are eventually consistent.  If you have hesitated to use a materialized view because of the maintenance overhead dbt can really help you there.  Another big feature you can leverage later is that it handles changes in hierarchy really well.  For instance, you develop all your analytics in a single schema, but in prod you want to separate raw, staging and marts. dbt makes this easy to do.  Another thing that is easy with dbt is using a personal db (analytics_joan) for development and testing before pushing to shared or production db (analytics) only after debugging or review.  
 
-Another point is that dbt knows about dependencies between models and will build them in the correct order.  This is a big help when you have many interdependent views and tables. This is no longer something you have to bake into your R code.  Consider a situation when you have to run R in the middle.  Let's say it's a forecast.  
+Another point is that dbt knows about dependencies between models and will build them in the correct order.  This is a big help when you have many interdependent views and tables. This is no longer something you have to bake into your R code.  Consider a situation when you have to run R in the middle.  Let's say it's a forecast.  Table C relieas on tables A and B already being built.  Table D is built by R and several tables (E, F, etc) depend on D.  You can manage this easily with dbt and R like so:
 
 ```{bash eval=FALSE}
 $dbt --select +C 
@@ -214,7 +214,7 @@ $Rscript run_forecast.R
 $dbt --select D+
 ```
 
-In the above example, dbt builds all dependencies of model C, then you run your R forecast which reads from C and writes to D, then dbt builds all models dependent on D.  This is a very clean way to manage interleaved R and SQL work.
+In the above example, dbt builds all dependencies of model C (A and B), then you run your R forecast which reads from C and writes to D, then dbt builds all models dependent on D.  This is a very clean way to manage interleaved R and SQL work.  Of course you also sidestep any concurrency issues. Set dbt threads = 1 in profiles.yml to avoid any possible read/write conflicts, and let dbt manage the ordering of work in the db. 
 
 Where you want to keep R is in your statistical analysis, plotting, anything more complicated than calculating standard deviations. lm(), prophet, SARIMAX, estimating a t-distribution all belong in R. It is a perfectly reasonable approach to nurture your data science process With R and DuckDB first, maybe adding dbt later as your scripts and data flows mature before pushing the ecosystem into a shared database.
 
