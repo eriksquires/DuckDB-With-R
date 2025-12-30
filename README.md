@@ -290,7 +290,30 @@ views and will make it easy to move your db out of duck and into a
 shared corporate datastore. One great feature is how it handles
 incremental models and incremental models that are eventually
 consistent. If you have hesitated to use a materialized view because of
-the maintenance overhead dbt can really help you there.
+the maintenance overhead dbt can really help you there. Another big
+feature you can leverage later is that it handles changes in hierarchy
+really well. For instance, you develop all your analytics in a single
+schema, but in prod you want to separate raw, staging and marts. dbt
+makes this easy to do. Another thing that is easy with dbt is using a
+personal db (analytics_joan) for development and testing before pushing
+to shared or production db (analytics) only after debugging or review.
+
+Another point is that dbt knows about dependencies between models and
+will build them in the correct order. This is a big help when you have
+many interdependent views and tables. This is no longer something you
+have to bake into your R code. Consider a situation when you have to run
+R in the middle. Let’s say it’s a forecast.
+
+``` bash
+$dbt --select +C 
+$Rscript run_forecast.R
+$dbt --select D+
+```
+
+In the above example, dbt builds all dependencies of model C, then you
+run your R forecast which reads from C and writes to D, then dbt builds
+all models dependent on D. This is a very clean way to manage
+interleaved R and SQL work.
 
 Where you want to keep R is in your statistical analysis, plotting,
 anything more complicated than calculating standard deviations. lm(),
