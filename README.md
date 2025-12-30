@@ -4,7 +4,7 @@ Erik Squires
 Here’s a few quality of life tips I’ve gathered from working with R,
 RStudio and DuckDB. I hope you find them useful.
 
-## Introduction
+# Introduction
 
 DuckDB is a very powerful in process database engine and data utility.
 It’s speed, full db features, ease of connection and ability to chew
@@ -24,7 +24,7 @@ and/or multiple function libraries which access DuckDB data I think
 you’ll find my observations and tips useful. This will also help you
 make your R code easier to share with your colleagues.
 
-## Observations
+# Observations
 
 - DuckDB connections are nearly instant
 
@@ -32,7 +32,7 @@ make your R code easier to share with your colleagues.
 
 Together these offer a problem and an opportunity.
 
-## DB Setup
+# DB Setup
 
 I chose to use a single DuckDB instance in a several different but
 related (by data) projects. At first I found myself copying or moving
@@ -117,7 +117,7 @@ environment:
 .GlobalEnv$cfg <- config::get()
 ```
 
-## Concurrency
+# The Concurrency Issue
 
 The one major annoyance of DuckDB is that it only allows a single
 read/write connection, however it allows any number of simultaneous read
@@ -246,7 +246,9 @@ If you are not already familiar with dbplyr/duckplyr you should be. They
 push a lot of the work of dplyr down to the database level which can
 really accelerate your work and keep your memory footprint down.
 
-# Maybe don’t use R
+# Data Migration Tips
+
+## Maybe don’t use R
 
 If you find yourself doing ETL, then a number of data aggregations /
 migrations in R (or Python for that matter) you may be much better off

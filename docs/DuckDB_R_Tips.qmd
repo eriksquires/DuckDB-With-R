@@ -7,13 +7,13 @@ editor: visual
 
 Here's a few quality of life tips I've gathered from working with R, RStudio and DuckDB. I hope you find them useful.
 
-## Introduction
+# Introduction
 
 DuckDB is a very powerful in process database engine and data utility. It's speed, full db features, ease of connection and ability to chew through very large data sets makes it an ideal companion to data scientists. I won't go over all of it's uses here, but in working with it to create a custom OLAP database at Uber for some rather involved forecast processes I came up with a list of tips I am sure can help many so I'm posting them all here. My work involved querying their data lake through a custom SQL wrapper, exploratory research and forecasting. Having a laptop DuckDB instance with 4 years of Uber rides, CPU and network telemetry was the single most important accelerator to my work there. After that what helped me a great deal was managing DuckDB connections.
 
 If you write processes of any sort of complexity, with multiple scripts and/or multiple function libraries which access DuckDB data I think you'll find my observations and tips useful. This will also help you make your R code easier to share with your colleagues.
 
-## Observations
+# Observations
 
 -   DuckDB connections are nearly instant
 
@@ -21,7 +21,7 @@ If you write processes of any sort of complexity, with multiple scripts and/or m
 
 Together these offer a problem and an opportunity.
 
-## DB Setup
+# DB Setup
 
 I chose to use a single DuckDB instance in a several different but related (by data) projects. At first I found myself copying or moving the db around to each new project but this was not manageable, and I repeatedly lost track as to which copy was the most current. I ended up with the following separation of concerns:
 
@@ -86,7 +86,7 @@ When you create variables in app.R you are already inside a local namespace, so 
 .GlobalEnv$cfg <- config::get()
 ```
 
-## Concurrency
+# The Concurrency Issue
 
 The one major annoyance of DuckDB is that it only allows a single read/write connection, however it allows any number of simultaneous read only connections. This is not a problem for simple scripts that open one connection at the top, reuse it throughout and then close before quitting. Unfortunately this leads us to a problem with attempting to write modular, reusable function libraries. We are left having to create some mechanism to test whether the connection has been opened or not in every single use.
 
@@ -192,7 +192,8 @@ source(here::here("lib", "db_funcs.R"))
 
 If you are not already familiar with dbplyr/duckplyr you should be. They push a lot of the work of dplyr down to the database level which can really accelerate your work and keep your memory footprint down.
 
-# Maybe don't use R
+# Data Migration Tips
+## Maybe don't use R
 
 If you find yourself doing ETL, then a number of data aggregations / migrations in R (or Python for that matter) you may be much better off managing your data herding with dbt. Think of it as Terraform for your data.
 
