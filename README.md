@@ -34,18 +34,30 @@ Together these offer a problem and an opportunity.
 
 ## DB Setup
 
-I found myself using my personal DuckDB instance in a variety of
-different projects. I wrote ETL scripts that would incrementally update
-a number of tables in the db but whose results were used in many
-separate forecasting projects. It was easier to keep the database itself
-in ~/db/ but use a soft link in each R project.
+I chose to use a single DuckDB instance in a several different but
+related (by data) projects. At first I found myself copying or moving
+the db around to each new project but this was not manageable, and I
+repeatedly lost track as to which copy was the most current. I ended up
+with the following separation of concerns:
 
-Make sure to add **\*\*/db/** to .gitignore.
+- The DB itself lived outside of R projects, in ~/db
+
+- One R project was strictly for incremental ETL. One script per table,
+  and a master ETL script I could quickly comment tables in/out.
+
+- Many forecasting and analysis jobs shared the db.
+
+Though I only had a single db copy I used a soft link in each R project
+folder, which I demonstrate below. Make sure to add **\*\*/db/** to
+.gitignore so your git commits don’t accidentally commit the whole db.
 
 ``` bash
 $ cd /dev/my_r_project
 $ ln -s ~/db .
 ```
+
+At about 10 GB, the DB was manageable, and transferable but definitely
+too large for git.
 
 ## Helpful R Libraries
 
@@ -81,11 +93,11 @@ cfg <- config::get()
 db_file <- here::here(cfg$DuckDB$path, cfg$DuckDB$name)
 ```
 
-here() returns the root of your R project, no matter what file you are
-in, and works in R, Rmd and Qmd files reliably. This alone solves a lot
-of problems in maintaining your docs/ files consistent and source()
-libraries. Parameters are concatenated with the local OS path separator
-as needed (‘/’ or ‘\\’).
+I also like to use **here() which** returns the root of your R project,
+no matter what file you are in, and works in R, Rmd and Qmd files
+reliably. This alone solves a lot of problems in maintaining your docs/
+files consistent and source() libraries. Parameters are concatenated
+with the local OS path separator as needed (‘/’ or ‘\\’).
 
 ### Shiny
 
@@ -226,24 +238,25 @@ data.
 
 ## Maybe don’t ETL
 
-A feature to lean into is that dbt and DuckDB have extensions to read
-external databases (postgres, mysql, etc), files (parquet, csv, etc.)
-and remote sources via httpfs. These may eliminate the initial need to
-do an external ETL and keep your work 100% inside of DuckDB and by
-extension in dbt.
+A feature to lean into is that dbt, DuckDB, and Postgres have extensions
+to read external databases (postgres, mysql, etc), files (parquet, csv,
+etc.) and remote sources via httpfs. These may eliminate the initial
+need to do an external ETL and keep your work 100% inside of DuckDB and
+by extension in dbt.
 
-Postgres has similar capabilities so look into the Foreign Data Wrapper.
+Postgres has at least a Foreign Data Wrapper which serves this purpose
+nicely.
 
 Regardless of your data lake or desktop DB these options are all worth
 considering before reinventing the wheel with custom, brittle ETL
-scripts.
+scripts. Connections are a lot better than ETL jobs.
 
 ## Data Transformation
 
-dbt is mainly for working inside a single database/warehouse. However,
-once you have your initial data it does a fantastic job of managing
-table updates and views and will make it easy to move your db out of
-duck and into a shared corporate datastore.
+dbt is for working inside a single database/warehouse and once you have
+your initial data it does a fantastic job of managing table updates and
+views and will make it easy to move your db out of duck and into a
+shared corporate datastore.
 
 dbt and your database are the right places to do data aggregation and
 data flows. If you find yourself doing sums, averages, percentiles, and
@@ -256,27 +269,25 @@ always migrate those views into dbt models later.
 
 Where you want to keep R is in your statistical analysis, plotting,
 anything more complicated than calculating standard deviations. lm(),
-prophet, SARIMAX, estimating a t-distribution all belong in R.
+prophet, SARIMAX, estimating a t-distribution all belong in R. It is a
+perfectly reasonable approach to nurture your data science process With
+R and DuckDB first, maybe adding dbt later as your scripts and data
+flows mature before pushing the ecosystem into a shared database.
 
 # Postgres or DuckDB?
 
-There are many ways in which these two db’s can overlap. We can argue
+There are many ways in which these two DB’s can overlap. We can argue
 performance, but for me the real issue is the configuration and set up
 time. If you already have a PostgresDB and want to keep using it, please
 go ahead. Where DuckDB shines is in going from zero to OLAP DB in a
 single line of R code. Users? Privileges? Haha! We don’t need no
 stinking user accounts. Tablespaces? Hahaha, that’s what we call the db
-file. Growth management… why? You need backups? Google drive!!
+file. Growth management… why? You need backups? Google Drive!!
 
 <img src="images/pirate_flag.png" style="width:50.0%"
 alt="Pirate Flag" />
 
 In all these ways DuckDB is the superior, single laptop choice. The one
 and only one area I know of where Postgres, or Maria or any other RDBMS
-really can claim superiority is in managing multiple read write
+really can claim superiority is in supporting multiple read write
 connections.
-
-It is a perfectly reasonable approach to nurture your data science
-process With R and DuckDB first, maybe adding dbt later as your scripts
-and data flows mature before pushing the ecosystem into a shared
-database.
