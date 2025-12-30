@@ -248,13 +248,6 @@ really accelerate your work and keep your memory footprint down.
 
 # Data Migration Tips
 
-## Maybe don’t use R
-
-If you find yourself doing ETL, then a number of data aggregations /
-migrations in R (or Python for that matter) you may be much better off
-managing your data herding with dbt. Think of it as Terraform for your
-data.
-
 ## Maybe don’t ETL
 
 Common DB features to lean into is that modern RDBMS systems usually
@@ -271,7 +264,7 @@ scripts. I cannot stress this enough: **Data Connections are much more
 reliable and less maintenance than external, script driven (python,
 bash, Perl, R) ETL jobs.**
 
-## Data Transformation
+## Maybe don’t use R for Data Transformation
 
 dbt is for working inside a single database/warehouse and once you have
 your initial data it does a fantastic job of managing table updates and
