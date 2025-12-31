@@ -243,17 +243,44 @@ fast this is not a performance issue.
 When you do need to write data, use duck_connect_rw() to get a
 read/write connection. Just make sure that no other rw connections are
 open at the same time. Usually we’ll find that we only need to write
-data towards the end of a process after all the analysis is done.
+data towards the end of a process after all the analysis is done. Even
+so, do it in a tight code block like this:
 
-If you find yourself using R for ETL and data migration/transformation
-before your real work can begin, you may want to consider using dbt
-instead. See the section below.
+``` r
+df <- run_forecasts(...)
+
+rw_con <- duck_connect_rw()
+dbWriteTable(rw_con, name="results", df, append=TRUE)
+dbDisconnect(rw_con)
+
+# You can also write a custom append function: 
+
+duck_append <- function(name, df) {
+  rw_con <- duck_connect_rw()
+  on.exit(dbDisconnect(rw_con), add=TRUE) # Forces connection closed on exit of function
+  if (!dbExistsTable(rw_con, name)) {
+    stop(glue::glue("{name} table does not exist, cannot append."))
+  }
+  dbWriteTable(rw_con, name= name, df, append=TRUE)
+}
+```
+
+Either approach works, the point is that you prevent a RW connection
+from malingering, forcing you to close it or restart your R session just
+to get rid of it. I do this especially when writing Rmd/Qmd files,
+because I’m usually debugging the data, db or underlying libraries at
+the same time that I’m writing documentation. This makes debugging while
+authoring much easier.
 
 # dbplyr and duckplyr
 
 If you are not already familiar with dbplyr/duckplyr you should be. They
 push a lot of the work of dplyr down to the database level which can
-really accelerate your work and keep your memory footprint down.
+really accelerate your work and keep your memory footprint down. In many
+cases you can preserve your R/dplyr logic through several stages without
+actually pulling any data from the db until you have fully expressed the
+shape of the data you want including joins of different lazy objects.
+Scope is beyond this document.
 
 # Explicitly load DB Backend
 
