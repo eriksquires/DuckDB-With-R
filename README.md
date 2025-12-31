@@ -28,11 +28,14 @@ make your R code easier to share with your colleagues.
 
 There are many ways in which these two DB’s can overlap. We can argue
 performance, but for me the real issue is the configuration and set up
-time. If you already have a PostgresDB and want to keep using it, please
-go ahead. Where DuckDB shines is in going from zero to OLAP DB in a
-single line of R code. Users? Privileges? Haha! We don’t need no
-stinking user accounts. Tablespaces? Hahaha, that’s what we call the db
-file. Growth management… why? You need backups? Google Drive!!
+time. If you already have a Postgres DB (or any other externally managed
+SQL datastore) and want to keep using it, please go ahead. Where DuckDB
+shines is in going from zero to OLAP DB in a single line of R code.
+Users? Privileges? Haha! We don’t need no stinking user accounts.
+Tablespaces? Hahaha, that’s what we call the db file. Growth management…
+why? You need backups? Google Drive!! Need a zoom with the DB team to
+set up your instance? Hahahah, we’ll be done with our analysis by the
+time the Zoom meeting can get scheduled.
 
 <img src="images/pirate_flag.png" style="width:50.0%"
 alt="Pirate Flag" />
