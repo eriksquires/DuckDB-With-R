@@ -183,22 +183,26 @@ When you do need to write data, use duck_connect_rw() to get a read/write connec
 
 If you find yourself using R for ETL and data migration/transformation before your real work can begin, you may want to consider using dbt instead. See the section below.
 
-# Minimum R Script
-
-```{r eval=FALSE}
-#| label: script
-library(DBI)
-library(duckdb) # <-- Important for RStudio connection panel to work correctly
-library(tidyverse)
-# Optional either of:
-# library(duckplyr) <-- More DuckDB features but may not work everywhere dbplyr does.
-# library(dbplyr)   <-- Reliable but not DuckDB aware
-
-# Loads our duck_connect_xx() functions
-source(here::here("lib", "db_funcs.R"))
-```
+# dbplyr and duckplyr
 
 If you are not already familiar with dbplyr/duckplyr you should be. They push a lot of the work of dplyr down to the database level which can really accelerate your work and keep your memory footprint down.
+
+# Explicitly load DB Backend
+It IS possible to get a valid connection but not have the RStudio Connections panel work correctly.  The reason is that schema introspection methods are tied to the backend driver package, but are not needed for basic DBI functions like dbConnect(),  dbGetQuery() or dbExecute().  As a result, without duckdb (or RPostgres) explicitly loaded the Connections panel won't fully populate.  The bad part about this is there's now arning message anywhere to tell you that the Connections panel is only half working.
+
+Here's what you should do instead: 
+```{r eval=FALSE}
+library(DBI)
+library(duckdb) # Or whatever your actual DB backend is, like RPostgres
+
+
+library(tidyverse)
+library(duckplyr)
+
+con <- dbConnect(duckdb(), ...)
+
+```
+
 
 # Data Migration Tips
 
