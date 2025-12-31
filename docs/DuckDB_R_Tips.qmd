@@ -188,7 +188,7 @@ If you find yourself using R for ETL and data migration/transformation before yo
 If you are not already familiar with dbplyr/duckplyr you should be. They push a lot of the work of dplyr down to the database level which can really accelerate your work and keep your memory footprint down.
 
 # Explicitly load DB Backend
-It IS possible to get a valid connection but not have the RStudio Connections panel work correctly.  The reason is that schema introspection methods are tied to the backend driver package, but are not needed for basic DBI functions like dbConnect(),  dbGetQuery() or dbExecute().  As a result, without duckdb (or RPostgres) explicitly loaded the Connections panel won't fully populate.  The bad part about this is there's now arning message anywhere to tell you that the Connections panel is only half working.
+It IS possible to get a valid connection but not have the RStudio Connections panel work correctly.  The reason is that schema introspection methods are tied to the backend driver package, but are not needed for basic DBI functions like dbConnect(),  dbGetQuery() or dbExecute().  As a result, without duckdb (or RPostgres) explicitly loaded the Connections panel won't fully populate.  The bad part about this is there's no warning message anywhere to tell you that the Connections panel is only half working.
 
 Here's what you should do instead: 
 ```{r eval=FALSE}

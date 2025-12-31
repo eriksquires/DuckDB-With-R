@@ -263,7 +263,7 @@ introspection methods are tied to the backend driver package, but are
 not needed for basic DBI functions like dbConnect(), dbGetQuery() or
 dbExecute(). As a result, without duckdb (or RPostgres) explicitly
 loaded the Connections panel won’t fully populate. The bad part about
-this is there’s now arning message anywhere to tell you that the
+this is there’s no warning message anywhere to tell you that the
 Connections panel is only half working.
 
 Here’s what you should do instead:
