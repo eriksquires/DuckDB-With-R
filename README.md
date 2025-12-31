@@ -24,18 +24,16 @@ and/or multiple function libraries which access DuckDB data I think
 you’ll find my observations and tips useful. This will also help you
 make your R code easier to share with your colleagues.
 
-# Postgres or DuckDB?
+# DuckDB or Other?
 
-There are many ways in which these two DB’s can overlap. We can argue
-performance, but for me the real issue is the configuration and set up
-time. If you already have a Postgres DB (or any other externally managed
-SQL datastore) and want to keep using it, please go ahead. Where DuckDB
-shines is in going from zero to OLAP DB in a single line of R code.
-Users? Privileges? Haha! We don’t need no stinking user accounts.
-Tablespaces? Hahaha, that’s what we call the db file. Growth management…
-why? You need backups? Google Drive!! Need a zoom with the DB team to
-set up your instance? Hahahah, we’ll be done with our analysis by the
-time the Zoom meeting can get scheduled.
+DuckDB is a full feature replacement for what we would do in a corporate
+managed RDBMS. We can argue performance, but for me the real issue is
+the configuration and set up time. If you already have a Postgres DB (or
+any other externally managed SQL datastore) and want to keep using it,
+please go ahead. Where DuckDB shines is in going from zero to OLAP DB in
+a single line of R code. Users? Privileges? Haha! We don’t need no
+stinking user accounts. Tablespaces? Hahaha, that’s what we call the db
+file. Growth management… why? You need backups? Google Drive!!
 
 <img src="images/pirate_flag.png" style="width:50.0%"
 alt="Pirate Flag" />
@@ -92,6 +90,8 @@ too large for git.
 
 There are a few libraries you should get comfortable with.
 
+### Config
+
 **config::get()** reads config.yml from the project root, picking the
 default configuration unless otherwise told to. Here’s an example:
 
@@ -128,16 +128,15 @@ reliably. This alone solves a lot of problems in maintaining your docs/
 files consistent and source() libraries. Parameters are concatenated
 with the local OS path separator as needed (‘/’ or ‘\\’).
 
-### Shiny
+My advice is to keep a global cfg variable. It eliminates cluttering
+your function signatures, or reloading in each function but also allows
+you to programmatically modify those variables in your main script. The
+same is true of having a global logger (see log4r) object.
 
-When you create variables in app.R you are already inside a local
-namespace, so if you want to read config.yml in one place and have your
-entire app know about it you need to explicitly put it in the global
-environment:
+### optparse
 
-``` r
-.GlobalEnv$cfg <- config::get()
-```
+Options Parse helps you read command line arguments. It works well with
+config.
 
 # The Concurrency Issue
 
@@ -274,6 +273,40 @@ to get rid of it. I do this especially when writing Rmd/Qmd files,
 because I’m usually debugging the data, db or underlying libraries at
 the same time that I’m writing documentation. This makes debugging while
 authoring much easier.
+
+## Performance
+
+### Iterations
+
+Like most DBs, DuckDB maintains a cache of the DB data in the buffer
+pool, so if you open and close a connection each time you are using the
+db you lose that cache. However, DuckDB scans are fast, and your OS will
+cache your db file so you often won’t feel this as a performance
+penalty, until you do.
+
+If you find yourself iterating over a large table you may want to keep
+the same connection open throughout the iteration process. This advice
+is not contradictory with the lessons, above. If your iterations use
+functions which also open your duck db they will get new connections to
+the same cached DuckDB instance. The difference is now you can also use
+your functions in test or other scripts without refactoring.
+
+### Views
+
+While duckdb caches file pages it does not cache view results. Each time
+you access a view you’ll suffer the same compute time. For this reason,
+maintaining a connection open during multiple view reads won’t help.
+What will help however is to materialize the view results into a table.
+Here’s an example in R/SQL:
+
+``` r
+dbExecute(con_rw, "CREATE OR REPLACE TABLE cached_view as SELECT * FROM my_view")
+```
+
+Now, if cached_view itself is large and would benefit from caching then
+you may wish to keep it’s connection open while you refer to it
+repeatedly. BTW, incrementally building a materialized view is a forte
+of dbt, below.
 
 # dbplyr and duckplyr
 
