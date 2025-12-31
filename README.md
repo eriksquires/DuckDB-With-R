@@ -47,7 +47,7 @@ but it still doesn’t support more than one writer at a time.
 # Observations
 
 - DuckDB connections are nearly instant
-
+- Scans are very fast
 - DuckDB does not support multiple read/write connections
 
 Together these offer a problem and an opportunity.
@@ -286,7 +286,7 @@ penalty, until you do.
 
 If you find yourself iterating over a large table you may want to keep
 the same connection open throughout the iteration process. This advice
-is not contradictory with the lessons, above. If your iterations use
+is not contradictory with the lessons above. If your iterations use
 functions which also open your duck db they will get new connections to
 the same cached DuckDB instance. The difference is now you can also use
 your functions in test or other scripts without refactoring.
@@ -300,23 +300,60 @@ What will help however is to materialize the view results into a table.
 Here’s an example in R/SQL:
 
 ``` r
-dbExecute(con_rw, "CREATE OR REPLACE TABLE cached_view as SELECT * FROM my_view")
+# Creates a table that will persist across sessions and connections: 
+dbExecute(con_rw, "CREATE OR REPLACE TABLE cached_view as SELECT * FROM my_view 
+          WHERE state = 'TX'")
+
+# Creates a temporary table, but only visible to this instance of con_rw.
+dbExecute(con_rw, "CREATE TEMP TABLE my_temp as SELECT * FROM my_view 
+          WHERE state = 'TX'")
+
+# Using dbplyr semantics: 
 ```
 
-Now, if cached_view itself is large and would benefit from caching then
-you may wish to keep it’s connection open while you refer to it
-repeatedly. BTW, incrementally building a materialized view is a forte
-of dbt, below.
+We are getting a little ahead of ourselves but dbplyr is worth
+mentioning here
+
+``` r
+library(tidyverse)
+library(duckplyr) # or dbplyr
+
+# Need RW connection because we are writing a temp table. 
+# Otherwise RO is OK.
+df_temp <- tbl(con_rw, "my_view") %>%
+  filter(state='TX') %>%
+  compute()
+
+# df_tmp is now a lazy link to a temp table with the results of my_view.  So long 
+# as you keep con_rw open you'll avoid further compute costs.
+
+# The big idea is we've used dplyr semantics to do work that is entirely in 
+# the db.  The time to generate the view has been paid and we can leverage 
+# duck db further. 
+coastal_df <- df_temp %>%
+  filter(county %in% coastal_zip_codes) %>%
+  collect()
+
+# coastal_df is now a real dataframe.
+# We can reuse df_tmp 
+inland_df <- df_tmp %>%
+  filter(!county %in% coastal_zip_codes) %>%
+  collect()
+```
+
+Whether or not you should use a temp table or materialized view depends
+entirely on your pain points.
 
 # dbplyr and duckplyr
 
-If you are not already familiar with dbplyr/duckplyr you should be. They
-push a lot of the work of dplyr down to the database level which can
-really accelerate your work and keep your memory footprint down. In many
-cases you can preserve your R/dplyr logic through several stages without
-actually pulling any data from the db until you have fully expressed the
-shape of the data you want including joins of different lazy objects.
-Scope is beyond this document.
+At the core level, dbplyr pushes filter, group_by, join and summarize
+semantics down to the DB, converting dbplyr to SQL for you. Duckplyr is
+the Duck DB specific version. Results are “lazy.” That is, you can
+express your dataframe but until you call collect(), the data hasn’t
+left the duck.
+
+Honestly, half of the performance value of using duckdb comes from using
+dbplyr.
 
 # Explicitly load DB Backend
 
@@ -327,7 +364,20 @@ not needed for basic DBI functions like dbConnect(), dbGetQuery() or
 dbExecute(). As a result, without duckdb (or RPostgres) explicitly
 loaded the Connections panel won’t fully populate. The bad part about
 this is there’s no warning message anywhere to tell you that the
-Connections panel is only half working.
+Connections panel is only half working. For RStudio, this is bad:
+
+``` r
+library(DBI)
+
+# We use duckdb, but never load duckdb. 
+con <- dbConnect(duckdb::duckdb(), ...)
+
+# The Connections panel will display something, but not everything. 
+# Especially if you use schemas besides the default.
+
+# This will work just fine, without duckdb loaded, relies on DBI alone.
+df <- dbGetQuery(con, ....)
+```
 
 Here’s what you should do instead:
 
@@ -335,11 +385,15 @@ Here’s what you should do instead:
 library(DBI)
 library(duckdb) # Or whatever your actual DB backend is, like RPostgres
 
+# Same exact connection string, but loading the duckdb (above) ensures the 
+# RStudio Connections panel will work as expected. 
+con <- dbConnect(duckdb::duckdb(), ...)
 
-library(tidyverse)
-library(duckplyr)
+# Now the Connections panel should show you everything
+# in your Duck DB
 
-con <- dbConnect(duckdb(), ...)
+# This will work just fine. 
+df <- dbGetQuery(con, ....)
 ```
 
 # Data Migration Tips
