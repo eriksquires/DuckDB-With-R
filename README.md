@@ -1,39 +1,44 @@
 # DuckDB R Tips
 Erik Squires
 
-Here’s a few quality of life tips I’ve gathered from working with R,
-RStudio and DuckDB. I hope you find them useful.
-
 # Introduction
+
+This guide is specifically tailored to those of you who are DuckDB users
+or DuckDB-curious and who are facing challenges as your projects grow in
+complexity. If you find yourself writing multiple scripts and/or
+multiple function libraries which access DuckDB data I think you’ll find
+my observations and tips useful.
+
+# DuckDB or Other?
 
 DuckDB is a very powerful in process database engine and data utility.
 It’s speed, full db features, ease of connection and ability to chew
 through very large data sets makes it an ideal companion to data
-scientists. I won’t go over all of it’s uses here, but in working with
-it to create a custom OLAP database at Uber for some rather involved
-forecast processes I came up with a list of tips I am sure can help many
-so I’m posting them all here. My work involved querying their data lake
-through a custom SQL wrapper, exploratory research and forecasting.
-Having a laptop DuckDB instance with 4 years of Uber rides, CPU and
-network telemetry was the single most important accelerator to my work
-there. After that what helped me a great deal was managing DuckDB
-connections.
+scientists. Our data complexity often progresses from using CSV files
+then RDS files and finally OMG, this is a lot of data in a lot of
+tables!
 
-If you write processes of any sort of complexity, with multiple scripts
-and/or multiple function libraries which access DuckDB data I think
-you’ll find my observations and tips useful. This will also help you
-make your R code easier to share with your colleagues.
+My own experience was similar. While using DuckDB to create a custom
+OLAP database at Uber for some rather involved forecast processes I came
+up with a list of tips I am sure can help many so I’m posting them all
+here. My work involved querying their data lake through a custom SQL
+wrapper, exploratory research and forecasting. While Uber has an amazing
+data lake infrastructure it was not ready for my use cases. Billions of
+rows of data inserted per hour per table in addition to heavy internal
+usage made even basic queries painfully slow. I solved my problems by
+using DuckDB to create a custom OLAP DB. With 4 years of Uber rides, CPU
+and network telemetry DuckDB was the single most important accelerator
+to my work there.
 
-# DuckDB or Other?
-
-DuckDB is a full feature replacement for what we would do in a corporate
-managed RDBMS. We can argue performance, but for me the real issue is
-the configuration and set up time. If you already have a Postgres DB (or
-any other externally managed SQL datastore) and want to keep using it,
-please go ahead. Where DuckDB shines is in going from zero to OLAP DB in
-a single line of R code. Users? Privileges? Haha! We don’t need no
-stinking user accounts. Tablespaces? Hahaha, that’s what we call the db
-file. Growth management… why? You need backups? Google Drive!!
+DuckDB can often be a full-feature replacement for what we would do in a
+corporate managed RDBMS. We can argue performance, but for me the real
+benefits are the configuration and set up time. If you already have a
+Postgres DB (or any other externally managed SQL datastore) and want to
+keep using it, please go ahead. Where DuckDB shines is in going from
+zero to OLAP DB in a single line of R code. Users? Privileges? Haha! We
+don’t need no stinking user accounts. Tablespaces? Hahaha, that’s what
+we call the db file. Growth management… why? You need backups? Google
+Drive!!
 
 <img src="images/pirate_flag.png" style="width:50.0%"
 alt="Pirate Flag" />
@@ -41,8 +46,9 @@ alt="Pirate Flag" />
 In all these ways DuckDB is the superior, single laptop choice. The one
 and only one area I know of where Postgres, or Maria or any other RDBMS
 really can claim superiority is in supporting multiple read write
-connections. As of this writing, there is MotherDuck for collaboration
-but it still doesn’t support more than one writer at a time.
+connections. As of this writing, there is
+[MotherDuck](https://motherduck.com) for collaboration but it still
+doesn’t support more than one writer at a time.
 
 # Observations
 
@@ -50,7 +56,7 @@ but it still doesn’t support more than one writer at a time.
 - Scans are very fast
 - DuckDB does not support multiple read/write connections
 
-Together these offer a problem and an opportunity.
+Together these offer problems and opportunities.
 
 # DB Setup
 
@@ -135,8 +141,8 @@ same is true of having a global logger (see log4r) object.
 
 ### optparse
 
-Options Parse helps you read command line arguments. It works well with
-config.
+Options Parse, or `optparse` is a package which helps you read command
+line arguments. It works well with config.
 
 # The Concurrency Issue
 
@@ -307,6 +313,7 @@ dbExecute(con_rw, "CREATE OR REPLACE TABLE cached_view as SELECT * FROM my_view
 # Creates a temporary table, but only visible to this connection instance.
 dbExecute(con_rw, "CREATE TEMP TABLE my_temp as SELECT * FROM my_view 
           WHERE state = 'TX'")
+
 ```
 
 A **temporary table** is a real disk-backed table in the DB which exists
@@ -322,19 +329,16 @@ below.
 
 # dbplyr and duckplyr
 
-At the core level, **dbplyr** pushes **dplyr** semantics such as
-`filter()`, `group_by()`, and `summarize()` down to the DB, converting
-them to SQL for you. Duckplyr is the Duck DB specific version. Results
-are “lazy.” That is, you can express your data set as if you were
-getting a dataframe but until you call `collect()`, the data never
-leaves the duck.
+**dbplyr** pushes **dplyr** semantics such as `filter()`, `group_by()`,
+and `summarize()` down to the DB, converting them to SQL for you.
+`duckplyr` is the Duck DB specific version. Results are “lazy.” That is,
+you can express your data set as if you were getting a dataframe but
+until you call `collect()`, the data never leaves the duck.
 
 Half of the performance value of using duckdb comes from using dbplyr.
 Explanations from here on are best done in code comments, below.
 
 ``` r
-
-
 library(tidyverse)
 library(duckplyr) # or dbplyr
 
@@ -361,7 +365,7 @@ df_temp <- tbl(con_rw, "my_view") %>%
 # tbl_dbi object. 
   
 
-# Finally, we actually materialize the data into a dataframe.
+# Materialize the data into a dataframe, finally!
 coastal_df <- df_temp %>%
   filter(is_coastal == TRUE) %>%
   collect() # <-- Without this, coastal_df would be yet another tbl_dbi object.
@@ -391,10 +395,9 @@ df_temp <- tbl(con_rw, "my_view") %>%
   collect()
 ```
 
-When you call `collect()` you materialize the dataset but leave it in
-the DB. That is, `df_temp` is still a tbl_dbi object but the results now
-exist in the DB on disk. The point is, again, to let DuckDB handle large
-dataset manipulation and storage.
+When you call `compute()` you materialize the dataset but to a temp
+table instead of a dataframe. The point is, again, to let DuckDB handle
+large dataset manipulation and storage.
 
 **Takeaway:** Converting a result to a temp table is one line of code.
 Don’t over think it. You can always go back and use temp tables when you
@@ -409,7 +412,9 @@ not needed for basic DBI functions like dbConnect(), dbGetQuery() or
 dbExecute(). As a result, without duckdb (or RPostgres) explicitly
 loaded the Connections panel won’t fully populate. The bad part about
 this is there’s no warning message anywhere to tell you that the
-Connections panel is only half working. For RStudio, this is bad:
+Connections panel is only half working. This is so frustrating because
+as far as you an tell, your database is working, the tables are there
+and you can use your data exactly as expected.
 
 ``` r
 library(DBI)
@@ -482,6 +487,11 @@ scripts. I cannot stress this enough: **Data Connections are much more
 reliable and less maintenance than external, script driven (python,
 bash, Perl, R) ETL jobs.**
 
+Truthfully you won’t always be able to avoid maintaining your own ETL
+jobs. Sometimes that’s the fastest route to getting results, but it’s
+worth stopping to ask your colleagues what options exist before you dive
+in.
+
 ## Maybe don’t use R for Data Transformation
 
 A database is the right places to do data aggregation and data
@@ -520,13 +530,13 @@ tables (E, F, etc) depend on D. You can manage this easily with dbt and
 R like so:
 
 ``` bash
-$dbt --select +C        # Builds A, B and C
-$Rscript run_forecast.R # Depends on A, B and C. Writes D
-$dbt --select D+        # Builds E, F, etc.
+$ dbt --select +C        # Builds A, B and C
+$ Rscript run_forecast.R # Depends on A, B and C. Writes D
+$ dbt --select D+        # Builds E, F, etc.
 ```
 
-This is a very clean way to manage interleaved R and SQL work. Of course
-you also sidestep any concurrency issues. Set dbt threads = 1 in
+This is a very clean way to manage interleaved R and SQL work. Of
+course, you also sidestep any concurrency issues. Set dbt threads = 1 in
 profiles.yml to avoid any possible read/write conflicts, and let dbt
 manage the ordering of work in the db. I think you will find that
 building dbt models reduced the amount of work you must do in R (or
@@ -535,12 +545,23 @@ governance people come to knock on your door you’ll be able to produce a
 nice lineage graph showing how data flows through your system, as well
 as documentation in schema.yml
 
-Where you want to keep R is in your statistical analysis, plotting,
-anything more complicated than calculating standard deviations. lm(),
-prophet, SARIMAX, estimating a t-distribution all belong in R. It is a
-perfectly reasonable approach to nurture your data science process with
-R and DuckDB first, maybe adding dbt later as your scripts and data
-flows mature before pushing the ecosystem into a shared database.
+## DBT and Materialized Views
+
+We cover views and temp tables above. If you have views which:
+
+- Don’t have to be up to the minute
+- Take a while to compute
+- Are used by many, like BI dashboards
+
+You may want to go ahead and let DBT create them for you overnight.
+
+**Summary**: Where you want to keep R is in your statistical analysis,
+plotting, anything more complicated than calculating standard
+deviations. lm(), prophet, SARIMAX, estimating a t-distribution all
+belong in R. It is a perfectly reasonable approach to nurture your data
+science process with R and DuckDB first, maybe adding dbt later as your
+scripts and data flows mature before pushing the ecosystem into a shared
+database.
 
 ## OpenDBT
 
@@ -549,3 +570,14 @@ OpenDBT](https://github.com/memiiso/opendbt). This is driven partly by
 the fear of a merger but also by a desire to enhance the core
 functionality. Among the features being actively worked on is built-in
 extraction and load.
+
+# Conclusion
+
+There’s no one right way to manage DuckDB or data migration or code
+complexity. I’ve shown you a number of options which I hope will be
+useful to you as your project grows in complexity. My own view is that
+what we call “quality of life” improvements are really core productivity
+requirements so it is worth recognizing your own pain points and solving
+them when you feel them. When you do you’ll find yourself consistently
+surprising yourself with your own level of productivity and satisfaction
+with the work you are doing.
