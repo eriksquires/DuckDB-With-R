@@ -3,11 +3,11 @@ Erik Squires
 
 # Introduction
 
-This guide is specifically tailored to those of you who are DuckDB users
-or DuckDB-curious and who are facing challenges as your projects grow in
-complexity. If you find yourself writing multiple scripts and/or
-multiple function libraries which access DuckDB data I think you’ll find
-my observations and tips useful.
+This guide is tailored to those of you who are
+[DuckDB](https://duckdb.org/) users or DuckDB-curious and who are facing
+challenges as your projects grow in complexity. If you find yourself
+writing multiple scripts and/or multiple function libraries which access
+DuckDB data I think you’ll find my observations and tips useful.
 
 # DuckDB or Other?
 
@@ -313,7 +313,6 @@ dbExecute(con_rw, "CREATE OR REPLACE TABLE cached_view as SELECT * FROM my_view
 # Creates a temporary table, but only visible to this connection instance.
 dbExecute(con_rw, "CREATE TEMP TABLE my_temp as SELECT * FROM my_view 
           WHERE state = 'TX'")
-
 ```
 
 A **temporary table** is a real disk-backed table in the DB which exists
@@ -327,20 +326,21 @@ keep very large result sets in the DB until you are ready for them.
 We’ll discuss how to leverage views even more in the section on dbplyr,
 below.
 
-# dbplyr and duckplyr
+# dbplyr
 
 **dbplyr** pushes **dplyr** semantics such as `filter()`, `group_by()`,
 and `summarize()` down to the DB, converting them to SQL for you.
-`duckplyr` is the Duck DB specific version. Results are “lazy.” That is,
-you can express your data set as if you were getting a data frame but
-until you call `collect()`, the data never leaves the duck.
+`dbplyr` is generic and works with any database with an R::DBI driver.
+Results are “lazy.” That is, you can express your data set as if you
+were getting a data frame but until you call `collect()`, the data never
+leaves the duck.
 
 Half of the performance value of using duckdb comes from using dbplyr.
 Explanations from here on are best done in code comments, below.
 
 ``` r
 library(tidyverse)
-library(duckplyr) # or dbplyr
+library(dbplyr) # or dbplyr
 
 # Assume we've loaded your custom DuckDB connection library here.
 
@@ -354,16 +354,18 @@ zip_codes <- tbl(con_rw, "zip_codes_us") %>%
 
 # zip_codes is not a data frame, yet! 
 # zip_codes is a tbl_dbi object. 
-# names() works but attempts to get any real value from the data 
-# will fail. 
+# Another way to think about it is that zip_codes is a SQL query that has not been 
+# executed yet. 
 
 df_temp <- tbl(con_rw, "my_view") %>%
   filter(state='TX') %>%
   left_join(zip_codes, by="code")
 
 # df_temp is also a tbl_dbi object.  Notice we are joining to another
-# tbl_dbi object. 
-  
+# tbl_dbi object. df_tmp is a new SQL query that's yet to be executed. 
+
+# Prints the SQL would be executed
+show_query(df_temp)  
 
 # Materialize the data into a data frame, finally!
 coastal_df <- df_temp %>%
@@ -373,7 +375,6 @@ coastal_df <- df_temp %>%
 # We can reuse the temp table via df_temp as much as we need to. 
 
 
-
 dbDisconnect(con_rw)
 
 # Access to all tbl_dbi objects will now fail. 
@@ -381,6 +382,10 @@ dbDisconnect(con_rw)
 # Materialized data frames like coastal_df however are just data frames and will
 # remain.
 ```
+
+You may ask “can’t I do this all with R?” and of course you can, but in
+this example we leveraged DuckDB for the filtering and join while
+staying within dplyr semantics.
 
 ## dbplyr and Temp Tables
 
@@ -402,6 +407,51 @@ large dataset manipulation and storage.
 **Takeaway:** Converting a result to a temp table is one line of code.
 Don’t over think it. You can always go back and use temp tables when you
 feel the pain.
+
+## duckplyr
+
+Duckplyr is meant to function as dbplyr for external **files** as
+opposed to a **Database.** Think especially parquet files but also CSV
+and JSON. A key difference is the object you work with.
+
+dbplyr::tbl() returns a tbl_dbi object. Essentially a SQL statement that
+has yet to be executed.
+
+If your data lives in files and need large dataset handling this is your
+toolset. Think of a duckdb_tibble as a tibble that is backed by DuckDB
+instead of a pure R tibble or data frame.
+
+Example:
+
+``` r
+library(duckplyr)
+
+# From a db we would use tbl() but from individual files 
+# we use the read_*_duckdb() functions to start.
+employees <- read_parquet_duckdb("employees.parquet")
+
+salary <- read_parquet_duckdb("salaries.parquet")
+
+payroll <- employees %>% 
+  left_join(salary, on = 'employee_id')
+
+# Use employees, salary and payroll like any other data frame. 
+```
+
+In the case above you use DuckDB like a super file scanner. Payroll is
+joined and returned by DuckDB, not R. Another potential benefit is using
+duckdb to glue together multiple data files with one line:
+
+``` r
+my_dat <- read_parquet_duckdb("data/*.parquet")
+```
+
+So long as your file schema is homogenous you’ll get a single, db backed
+object without having to ingest it all yet.
+
+Obviously, duckdb is overkill for a CSV file with 4 columns and a couple
+of thousand rows in a couple of files. It’s when your dataset is large,
+files are many and want to keep dplyr semantics that duckplyr shines.
 
 # RStudio Connections Panel Hiccups
 
@@ -500,34 +550,23 @@ various joins with categorical tables, or you’ve found yourself making R
 function libraries to return consistent data sets you are 100% in the
 land of databases and dbt (data build tool). Even if you are not ready
 for dbt yet, pushing transformations into views instead of R code is a
-big improvement in terms of performance and maintainability. You can
-always migrate those views into dbt models later.
+big improvement in terms of performance and maintainability.
 
-dbt is for working inside a single database/warehouse and once you have
-your initial data it does a fantastic job of managing table updates and
-views and will make it easy to move your db out of duck and into a
-shared corporate datastore. One great feature is how it handles
-incremental models and incremental models that are eventually
-consistent. If you have hesitated to use a materialized view because of
-the maintenance overhead dbt can really help you there. Another big
-feature you can leverage later is that it handles changes in hierarchy
-really well. For instance, you develop all your analytics in a single
-schema, but in prod you want to separate raw, staging and marts. dbt
-makes this easy to do. Another thing that is easy with dbt is using a
-personal db (analytics_joan) for development and testing before pushing
-to shared or production db (analytics) only after debugging or review.
+While we’ve shown how to use dbplyr for data transformation but you
+should also consider whether you need to bring in a tool like DBT. DBT
+is like Terraform but for analytic databases and workflows.
 
-Another point is that dbt knows about dependencies between models and
-will build them in the correct order. This is a big help when you have
-many interdependent views and tables. This is no longer something you
-have to bake into your R code. You can also mix R and dbt as needed.
-Consider a situation when you have to run R in the middle. Let’s imagine
-you are running a forecast, which depends on several upstream tables but
-there are also a number of financial table that must be updated after
-the forecast to feed the Business Intelligence (BI) charts. For this
-example, table C relies on tables A and B. Table D is built by R. The BI
-tables (E, F, etc) depend on D. You can manage this easily with dbt and
-R like so:
+The big feature of dbt is that it is aware of dependencies between
+tables and views and will build them in the correct order. This is a big
+help when you have many interdependent views and tables. This is no
+longer something you have to bake into your R code. You can also mix R
+and dbt as needed. Consider a situation when you have to run R in the
+middle. Let’s imagine you are running a forecast, which depends on
+several upstream tables but there are also a number of financial table
+that must be updated after the forecast to feed the Business
+Intelligence (BI) charts. For this example, table C relies on tables A
+and B. Table D is built by R. The BI tables (E, F, etc) depend on D. You
+can manage this easily with dbt and R like so:
 
 ``` bash
 $ dbt --select +C        # Builds A, B and C
@@ -543,7 +582,7 @@ building dbt models reduced the amount of work you must do in R (or
 Python, etc.) with the same reliability and flexibility. When the data
 governance people come to knock on your door you’ll be able to produce a
 nice lineage graph showing how data flows through your system, as well
-as documentation in schema.yml
+as documentation in schema.yml.
 
 ## DBT and Materialized Views
 
