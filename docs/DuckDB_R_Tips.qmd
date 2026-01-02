@@ -13,7 +13,11 @@ This guide is tailored to those of you who are [DuckDB](https://duckdb.org/) use
 
 DuckDB is a very powerful in process database engine and data utility. It's speed, full db features, ease of connection and ability to chew through very large data sets makes it an ideal companion to data scientists. Our data complexity often progresses from using CSV files then RDS files and finally OMG, this is a lot of data in a lot of tables!
 
-My own experience was similar. While using DuckDB to create a custom OLAP database at Uber for some rather involved forecast processes I came up with a list of tips I am sure can help many so I'm posting them all here. My work involved querying their data lake through a custom SQL wrapper, exploratory research and forecasting. While Uber has an amazing data lake infrastructure it was not ready for my use cases. Billions of rows of data inserted per hour per table in addition to heavy internal usage made even basic queries painfully slow. I solved my problems by using DuckDB to create a custom OLAP DB. With 4 years of Uber rides, CPU and network telemetry DuckDB was the single most important accelerator to my work there.
+There are generally speaking, two major use cases.  You need to create an OLAP database and analyze it with R.  The other use case is you have a lot of large files, especially parquet files, and you need to reduce the effort and time needed to read and process them. 
+
+My own experience was centered on the former. While using DuckDB to create a custom OLAP database at Uber for some rather involved forecast processes I came up with a list of tips I am sure can help many so I'm posting them all here. My work involved querying their data lake through a custom SQL wrapper, exploratory research and forecasting. While Uber has an amazing data lake infrastructure it was not ready for my use cases. Billions of rows of data inserted per hour per table in addition to heavy internal usage made even basic queries painfully slow. I solved my problems by using DuckDB to create a custom OLAP DB. With 4 years of Uber rides, CPU and network telemetry DuckDB was the single most important accelerator to my work there.
+
+For this reason I focus a great deal on the care, feeding and use of a DuckDB instance. If that's not you you can safely skip the sections on Concurrency, **dbplyr** and **Data Migration**.
 
 DuckDB can often be a full-feature replacement for what we would do in a corporate managed RDBMS. We can argue performance, but for me the real benefits are the configuration and set up time. If you already have a Postgres DB (or any other externally managed SQL datastore) and want to keep using it, please go ahead. Where DuckDB shines is in going from zero to OLAP DB in a single line of R code. Users? Privileges? Haha! We don't need no stinking user accounts. Tablespaces? Hahaha, that's what we call the db file. Growth management... why? You need backups? Google Drive!!
 
@@ -221,7 +225,29 @@ A **temporary table** is a real disk-backed table in the DB which exists only in
 
 We'll discuss how to leverage views even more in the section on dbplyr, below.
 
-# dbplyr
+# dbplyr vs. duckplyr
+We'll cover each in depth but since the names are confusing we should discuss them first. They are confusing in part because of DuckDB's flexibility.  Not only does DuckDB work as a very capable DB engine it brings much of that capability to raw CSV and parquet files as well. 
+
+These two packages overlap because they both bring DuckDB features to dplyr semantics, but for different sources.  
+
+If you have a DuckDB database, or want to create one you'll use these libraries:
+
+```r
+library(DBI)
+library(duckdb)
+library(tidyverse)
+library(dbplyr)
+```
+
+On the other hand if you use DuckDB to read bare files and won't use dbConnect(), dbDisconnect(), etc. you'll use: 
+
+```r
+library(tidyverse)
+library(duckplyr)
+```
+
+We'll cover each case in more detail below. 
+
 
 **dbplyr** pushes **dplyr** semantics such as `filter()`, `group_by()`, and `summarize()` down to the DB, converting them to SQL for you. `dbplyr` is generic and works with any database with an R::DBI driver. Results are "lazy." That is, you can express your data set as if you were getting a data frame but until you call `collect()`, the data never leaves the duck.
 
@@ -289,13 +315,14 @@ When you call `compute()` you materialize the data set but to a temp table inste
 
 **Takeaway:** Converting a result to a temp table is one line of code. Don't over think it. You can always go back and use temp tables when you feel the pain.
 
-## duckplyr
+# duckplyr
 
-Duckplyr is meant to function as dbplyr for external **files** as opposed to a **Database.** Think especially parquet files but also CSV and JSON. A key difference is the object you work with.
+Duckplyr is meant to function as dbplyr for external **files** as opposed to a **Database.** Think especially parquet files but also CSV and JSON. A key difference is the clas of objects you work with.
 
-dbplyr::tbl() returns a tbl_dbi object. Essentially a SQL statement that has yet to be executed.
+- dbplyr::tbl() returns a tbl_dbi. 
+- duckplyr::read_xxx_duckdb() return a duckdb_tbl. 
 
-If your data lives in files and need large dataset handling this is your toolset. Think of a duckdb_tibble as a tibble that is backed by DuckDB instead of a pure R tibble or data frame.
+Think of a duckdb_tibble as a tibble that is backed by DuckDB instead of a pure R tibble or data frame.
 
 Example:
 
@@ -314,13 +341,13 @@ payroll <- employees %>%
 # Use employees, salary and payroll like any other data frame. 
 ```
 
-In the case above you use DuckDB like a super file scanner. Payroll is joined and returned by DuckDB, not R. Another potential benefit is using duckdb to glue together multiple data files with one line:
+Another powerful use of `duckplyr` is the use of globs to access data in multiple files.  Imagine you have files in `data/sales` per month and store.  Something like this:  `data/sales/2025_06_Atlanta01.parquet`. DuckDB will let us conceptutally concatenate them together with one line: 
 
 ``` r
-my_dat <- read_parquet_duckdb("data/*.parquet")
+sales_2025 <- read_parquet_duckdb("data/sales/2025_*.parquet")
 ```
 
-So long as your file schema is homogenous you'll get a single, db backed object without having to ingest it all yet.
+So long as your file schema is homogeneous you'll get a single, db backed object without having to ingest it all yet.  While `dbplyr` creates a SQL query, `duckplyr` creates a file read and filter plan. The nuances and rules for when each actually pulls data into R are too nuanced for us here. 
 
 Obviously, duckdb is overkill for a CSV file with 4 columns and a couple of thousand rows in a couple of files. It's when your dataset is large, files are many and want to keep dplyr semantics that duckplyr shines.
 
