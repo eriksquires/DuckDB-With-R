@@ -18,25 +18,34 @@ scientists. Our data complexity often progresses from using CSV files
 then RDS files and finally OMG, this is a lot of data in a lot of
 tables!
 
-There are generally speaking, two major use cases. You need to create an
-OLAP database and analyze it with R. The other use case is you have a
-lot of large files, especially parquet files, and you need to reduce the
-effort and time needed to read and process them.
+There are generally speaking, two major use cases for DuckDB:
 
-My own experience was centered on the former. While using DuckDB to
-create a custom OLAP database at Uber for some rather involved forecast
-processes I came up with a list of tips I am sure can help many so I’m
-posting them all here. My work involved querying their data lake through
-a custom SQL wrapper, exploratory research and forecasting. While Uber
-has an amazing data lake infrastructure it was not ready for my use
-cases. Billions of rows of data inserted per hour per table in addition
-to heavy internal usage made even basic queries painfully slow. I solved
-my problems by using DuckDB to create a custom OLAP DB. With 4 years of
-Uber rides, CPU and network telemetry DuckDB was the single most
+- You need to create and maintain an analytics database (OLAP) and
+  analyze it with R.
+- You have a lot of large files, especially parquet files, and you need
+  to reduce the effort and time needed to read and process them.
+
+These cases are so different there are data scientists who are unaware
+that both exist, but it is this flexibility that has accelerated the
+adoption of DuckDB. It is much more than merely a fast version of
+SQLite.
+
+My own experience was centered on the first use case. At Uber, my work
+involved querying their data lake through a custom SQL wrapper,
+exploratory research and forecast developement. Even though Uber has an
+amazing data lake infrastructure it was not ready for my forecast use
+cases, and it was hard to convince others of a need for an OLAP specific
+schema for my team. Billions of rows of data inserted per hour per table
+in addition to heavy internal usage made even basic queries painfully
+slow. It was impossible to learn the dataset the way I needed to from
+the data lake alone. Using DuckDB to create a custom OLAP DB which fit
+on my laptop in a single file was priceless and the single most
 important accelerator to my work there.
 
 For this reason I focus a great deal on the care, feeding and use of a
-DuckDB instance. If that’s not you you can safely skip the sections on
+DuckDB instance, but this is clearly not how everyone uses DuckDB. If
+your data is already on files and you do not need to incrementally grow
+or migrate your data then you may safely skip the sections on
 Concurrency, **dbplyr** and **Data Migration**.
 
 DuckDB can often be a full-feature replacement for what we would do in a
@@ -153,17 +162,17 @@ same is true of having a global logger (see log4r) object.
 Options Parse, or `optparse` is a package which helps you read command
 line arguments. It works well with config.
 
-# The Concurrency Issue
+# Concurrency
 
-The one major annoyance of DuckDB is that it only allows a single
-read/write connection, however it allows any number of simultaneous read
-only connections. This is not a problem for one-page scripts that open
-one connection at the top, reuse it throughout and then close before
-quitting. Unfortunately this doesn’t hold up when we are managing
-complex work and need to write modular, reusable function libraries. Do
-you pass the connection around? If so who and what opens it with the
-correct write privileges? How many times must you check it to be sure?
-Are you checking it the right way?
+The one major annoyance of a DuckDB instance is that it only allows a
+single read/write connection, however it allows any number of
+simultaneous read only connections. This is not a problem for one-page
+scripts that open one connection at the top, reuse it throughout and
+then close before quitting. Unfortunately this doesn’t hold up when we
+are managing complex work and need to write modular, reusable function
+libraries. Do you pass the connection around? If so who and what opens
+it with the correct write privileges? How many times must you check it
+to be sure? Are you checking it the right way?
 
 This also becomes a problem when you are editing your schema, or viewing
 it in another tool like VS Code or the duckdb CLI and want to test your
@@ -496,7 +505,7 @@ files are many and want to keep dplyr semantics that duckplyr shines.
 
 # RStudio Connections Panel Hiccups
 
-It IS possible to get a valid connection but not have the RStudio
+It IS possible to get a valid DBI connection but not have the RStudio
 Connections panel work correctly. The reason is that schema
 introspection methods are tied to the back-end driver package, but are
 not needed for basic DBI functions like dbConnect(), dbGetQuery() or
