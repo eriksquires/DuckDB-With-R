@@ -575,9 +575,11 @@ extraction and load.
 
 There’s no one right way to manage DuckDB or data migration or code
 complexity. I’ve shown you a number of options which I hope will be
-useful to you as your project grows in complexity. My own view is that
-what we call “quality of life” improvements are really core productivity
-requirements so it is worth recognizing your own pain points and solving
-them when you feel them. When you do you’ll find yourself consistently
-surprising yourself with your own level of productivity and satisfaction
-with the work you are doing.
+useful to you as your project grows in complexity but none are required.
+You don’t have to use a database. You don’t have to use `dbplyr` or
+temporary tables but having those tools in your bag should be useful. My
+own view is that what we call “quality of life” improvements are really
+core productivity requirements so it is worth recognizing your own pain
+points and solving them when you feel them. When you do you’ll find
+yourself consistently surprising yourself with your own level of
+productivity and satisfaction with the work you are doing.
