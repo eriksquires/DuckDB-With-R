@@ -479,7 +479,7 @@ con <- dbConnect(duckdb::duckdb(), ...)
 df <- dbGetQuery(con, ....)
 ```
 
-Here’s what you should do instead:
+Here’s what you could do instead:
 
 ``` r
 library(DBI)
