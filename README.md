@@ -304,58 +304,103 @@ Here’s an example in R/SQL:
 dbExecute(con_rw, "CREATE OR REPLACE TABLE cached_view as SELECT * FROM my_view 
           WHERE state = 'TX'")
 
-# Creates a temporary table, but only visible to this instance of con_rw.
+# Creates a temporary table, but only visible to this connection instance.
 dbExecute(con_rw, "CREATE TEMP TABLE my_temp as SELECT * FROM my_view 
           WHERE state = 'TX'")
-
-# Using dbplyr semantics: 
 ```
 
-We are getting a little ahead of ourselves but dbplyr is worth
-mentioning here
+A **temporary table** is a real disk-backed table in the DB which exists
+only in the scope of your connection. No other connection can see it,
+and when the connection closes it vanishes into thin air. Temp tables
+are incredibly useful constructs as they let us create large working
+data sets entirely in the database, before bringing subsets into R for
+analysis. This can save you time recomputing the view as well as let you
+keep very large result sets in the DB until you are ready for them.
 
-``` r
-library(tidyverse)
-library(duckplyr) # or dbplyr
-
-# Need RW connection because we are writing a temp table. 
-# Otherwise RO is OK.
-df_temp <- tbl(con_rw, "my_view") %>%
-  filter(state='TX') %>%
-  compute()
-
-# df_tmp is now a lazy link to a temp table with the results of my_view.  So long 
-# as you keep con_rw open you'll avoid further compute costs.
-
-# The big idea is we've used dplyr semantics to do work that is entirely in 
-# the db.  The time to generate the view has been paid and we can leverage 
-# duck db further. 
-coastal_df <- df_temp %>%
-  filter(county %in% coastal_zip_codes) %>%
-  collect()
-
-# coastal_df is now a real dataframe.
-# We can reuse df_tmp 
-inland_df <- df_tmp %>%
-  filter(!county %in% coastal_zip_codes) %>%
-  collect()
-```
-
-Whether or not you should use a temp table or materialized view depends
-entirely on your pain points.
+We’ll discuss how to leverage views even more in the section on dbplyr,
+below.
 
 # dbplyr and duckplyr
 
-At the core level, dbplyr pushes filter, group_by, join and summarize
-semantics down to the DB, converting dbplyr to SQL for you. Duckplyr is
-the Duck DB specific version. Results are “lazy.” That is, you can
-express your dataframe but until you call collect(), the data hasn’t
-left the duck.
+At the core level, **dbplyr** pushes **dplyr** semantics such as
+`filter()`, `group_by()`, and `summarize()` down to the DB, converting
+them to SQL for you. Duckplyr is the Duck DB specific version. Results
+are “lazy.” That is, you can express your data set as if you were
+getting a dataframe but until you call `collect()`, the data never
+leaves the duck.
 
-Honestly, half of the performance value of using duckdb comes from using
-dbplyr.
+Half of the performance value of using duckdb comes from using dbplyr.
+Explanations from here on are best done in code comments, below.
 
-# Explicitly load DB Backend
+``` r
+
+
+library(tidyverse)
+library(duckplyr) # or dbplyr
+
+# Assume we've loaded your custom DuckDB connection library here.
+
+
+# Need RW connection because we will be writing a temp table. 
+con_rw <- duck_connect_rw()
+
+# Lets get US zip codes and whether they are on the coast line or not.
+zip_codes <- tbl(con_rw, "zip_codes_us") %>%
+  select(code, is_coastal)
+
+# zip_codes is not a dataframe, yet! 
+# zip_codes is a tbl_dbi object. 
+# names() works but attempts to get any real value from the data 
+# will fail. 
+
+df_temp <- tbl(con_rw, "my_view") %>%
+  filter(state='TX') %>%
+  left_join(zip_codes, by="code")
+
+# df_temp is also a tbl_dbi object.  Notice we are joining to another
+# tbl_dbi object. 
+  
+
+# Finally, we actually materialize the data into a dataframe.
+coastal_df <- df_temp %>%
+  filter(is_coastal == TRUE) %>%
+  collect() # <-- Without this, coastal_df would be yet another tbl_dbi object.
+
+# We can reuse the temp table via df_temp as much as we need to. 
+
+
+
+dbDisconnect(con_rw)
+
+# Access to all tbl_dbi objects will now fail. 
+
+# Materialized data frames like coastal_df however are just data frames and will
+# remain.
+```
+
+## dbplyr and Temp Tables
+
+As we mentioned above, using views which have long compute times may be
+painful and leave you wanting to use a temporary table. Let’s convert
+`df_temp`, above, to be backed by a temp table by adding `collect()`:
+
+``` r
+df_temp <- tbl(con_rw, "my_view") %>%
+  filter(state='TX') %>%
+  left_join(zip_codes, by="code") %>%
+  collect()
+```
+
+When you call `collect()` you materialize the dataset but leave it in
+the DB. That is, `df_temp` is still a tbl_dbi object but the results now
+exist in the DB on disk. The point is, again, to let DuckDB handle large
+dataset manipulation and storage.
+
+**Takeaway:** Converting a result to a temp table is one line of code.
+Don’t over think it. You can always go back and use temp tables when you
+feel the pain.
+
+# RStudio Connections Panel Hiccups
 
 It IS possible to get a valid connection but not have the RStudio
 Connections panel work correctly. The reason is that schema
