@@ -332,7 +332,7 @@ below.
 **dbplyr** pushes **dplyr** semantics such as `filter()`, `group_by()`,
 and `summarize()` down to the DB, converting them to SQL for you.
 `duckplyr` is the Duck DB specific version. Results are “lazy.” That is,
-you can express your data set as if you were getting a dataframe but
+you can express your data set as if you were getting a data frame but
 until you call `collect()`, the data never leaves the duck.
 
 Half of the performance value of using duckdb comes from using dbplyr.
@@ -352,7 +352,7 @@ con_rw <- duck_connect_rw()
 zip_codes <- tbl(con_rw, "zip_codes_us") %>%
   select(code, is_coastal)
 
-# zip_codes is not a dataframe, yet! 
+# zip_codes is not a data frame, yet! 
 # zip_codes is a tbl_dbi object. 
 # names() works but attempts to get any real value from the data 
 # will fail. 
@@ -365,7 +365,7 @@ df_temp <- tbl(con_rw, "my_view") %>%
 # tbl_dbi object. 
   
 
-# Materialize the data into a dataframe, finally!
+# Materialize the data into a data frame, finally!
 coastal_df <- df_temp %>%
   filter(is_coastal == TRUE) %>%
   collect() # <-- Without this, coastal_df would be yet another tbl_dbi object.
@@ -395,8 +395,8 @@ df_temp <- tbl(con_rw, "my_view") %>%
   collect()
 ```
 
-When you call `compute()` you materialize the dataset but to a temp
-table instead of a dataframe. The point is, again, to let DuckDB handle
+When you call `compute()` you materialize the data set but to a temp
+table instead of a data frame. The point is, again, to let DuckDB handle
 large dataset manipulation and storage.
 
 **Takeaway:** Converting a result to a temp table is one line of code.
@@ -407,9 +407,9 @@ feel the pain.
 
 It IS possible to get a valid connection but not have the RStudio
 Connections panel work correctly. The reason is that schema
-introspection methods are tied to the backend driver package, but are
+introspection methods are tied to the back-end driver package, but are
 not needed for basic DBI functions like dbConnect(), dbGetQuery() or
-dbExecute(). As a result, without duckdb (or RPostgres) explicitly
+dbExecute(). As a result, without `duckdb` (or `RPostgres`) explicitly
 loaded the Connections panel won’t fully populate. The bad part about
 this is there’s no warning message anywhere to tell you that the
 Connections panel is only half working. This is so frustrating because
