@@ -46,7 +46,7 @@ For this reason I focus a great deal on the care, feeding and use of a
 DuckDB instance, but this is clearly not how everyone uses DuckDB. If
 your data is already on files and you do not need to incrementally grow
 or migrate your data then you may safely skip the sections on
-Concurrency, **dbplyr** and **Data Migration**.
+**Concurrency**, **dbplyr** and **Data Migration**.
 
 DuckDB can often be a full-feature replacement for what we would do in a
 corporate managed RDBMS. We can argue performance, but for me the real
@@ -502,6 +502,11 @@ nuanced for us here.
 Obviously, duckdb is overkill for a CSV file with 4 columns and a couple
 of thousand rows in a couple of files. It’s when your dataset is large,
 files are many and want to keep dplyr semantics that duckplyr shines.
+
+Dbplyr and duckplyr can happily coexist. For instance, you can maintain
+a DuckDB instance, and use duckplyr to ingest parquet tiles. Easy peasy.
+The only “problem” is that joins across different object types (tbl_dbi
+vs. duckdb_tbl) will force materialization into R.
 
 # RStudio Connections Panel Hiccups
 
