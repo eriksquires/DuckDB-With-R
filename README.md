@@ -487,7 +487,8 @@ tbl(con, "t") %>% mutate(x = MY_DB_FUNC(y, z))
 # generates: MY_DB_FUNC(`y`, `z`)
 ```
 
-You can also use `sql()` to directly inject specific SQL in your dbplyr:
+You can also use `sql()` or `sql_expr()` to directly inject specific SQL
+in your dbplyr:
 
 ``` r
 tbl(con, "my_table") %>%
