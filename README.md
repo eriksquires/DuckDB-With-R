@@ -526,12 +526,35 @@ By doing this you accomplish this:
 Don’t over think it. You can always go back and use temp tables when you
 feel the pain.
 
-# DuckDB with Postgres
+# DuckDB with a Remote DB
 
 Now that we’ve covered dbplyr and all the benefits we can more fully
-discuss how DuckDB can accelerate access to Postgres. The reason this is
-faster than using raw Postgres via `RPostgres` is that DuckDB creates a
-local columnar, parallel access cache.
+discuss how DuckDB can accelerate access to Postgres, MySQL or any ODBC
+connected DB. We’ll use Postgres as an example because the performance
+improvements are well documented.
+
+Using DuckDB as an intermediary can be faster when you can take
+advantage of it’s column store and parallel execution engine.
+
+Intuitively we would understand that DuckDB can’t pull data any faster
+than Postgres can produce it, and we’d be correct. It’s the compute time
+that DuckDB can shorten significantly. This happens when you have large
+row counts and:
+
+- Aggregations
+- Window functions
+- Joins
+- Common Table Expressions (CTEs)
+- Complex expressions such as computed coluns, CASE statements, etc.
+
+In these cases, DuckDB’s columnn store and parallel execution can really
+speed things up. If you plan to reuse this data consider materializing
+it into at least a temp table if not a local Duck instance or parquet
+file.
+
+The key here is you let DuckDB attach to the remote instead of trying to
+do so with R. We show a trivial examples of connecting to a remote
+Postgres DB via DuckDB below.
 
 ``` r
 library(DBI)
@@ -543,13 +566,14 @@ con <- dbConnect(duckdb::duckdb(), dbdir = "analytics.duckdb")
 # enable Postgres support
 dbExecute(con, "INSTALL postgres; LOAD postgres;")
 
-# attach Postgres database
+# attach Postgres database to Duck, not R
 dbExecute(con, "
   ATTACH 'dbname=mydb host=localhost user=myuser password=mypw'
   AS pg (TYPE postgres);
 ")
 
-# query Postgres table directly
+# Now we can query the Postgres table directly
+# through the DuckDB connection
 df <- dbGetQuery(con, "
   SELECT *
   FROM pg.public.my_table
@@ -562,21 +586,6 @@ df_tbl <- tbl(con, "pg.public.my_table") %>%
 
 dbDisconnect(con, shutdown = TRUE)
 ```
-
-Intuitively we would understand that DuckDB can’t pull data any faster
-than Postgres can produce it, and we’d be correct. The cases when you
-are better off using DuckDB are when you have large row counts and:
-
-- Aggregations
-- Window functions
-- Joins
-- Common Table Expressions (CTEs)
-- Complex expressions such as computed coluns, CASE statements, etc.
-
-In these cases, DuckDB’s columnn store and parallel execution can really
-speed things up. If you plan to reuse this data consider materializing
-it into at least a temp table if not a local Duck instance or parquet
-file.
 
 # RStudio Connections Panel Hiccups
 
@@ -634,8 +643,13 @@ BI tools instead of R or Python.
 
 The modern data scientist/analytics engineer has to fend for themselves
 more often than not. It is rare we have the luxury of a data team to
-just hand us tables on a silver platter. If that is you and you have
-started going down the road of self sufficiency I have some pointers.
+just hand us tables on a silver platter.
+
+In the course of your work you may start with pulling data from a remote
+source to local files, then you realize you are managing too many files
+or that the data you need is growing incrementally. If that is you and
+you have started going down the road of self sufficiency I have some
+pointers.
 
 ## Maybe don’t ETL
 
