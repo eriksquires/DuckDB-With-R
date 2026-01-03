@@ -346,22 +346,32 @@ below.
 
 # dbplyr vs. duckplyr
 
+These two packages overlap because they can both bring DuckDB features
+to dplyr semantics, but for different use cases.
+
 We’ll cover each in depth but since the names are confusing we should
-discuss them first. They are confusing in part because of DuckDB’s
-flexibility. Not only does DuckDB work as a very capable DB engine it
-brings much of that capability to raw CSV and parquet files as well.
+compare and contrast them. dbplyr is part of the [tidyverse
+toolset](https://dbplyr.tidyverse.org/), as opposed to duckplyr and is a
+generic tool for SQL backed databases, including duckdb. `duckplyr`
+tries to extend this same idea to **files** instead of databases by
+using DuckDB between R and your files. Using either can be a big
+performance improvement but for different reasons.
 
-These two packages overlap because they both bring DuckDB features to
-dplyr semantics, but for different sources.
-
-If you have a DuckDB database, or want to create one you’ll use these
-libraries:
+It’s easier to show you than explain. If you have a DuckDB database, or
+want to create one you’ll use these libraries:
 
 ``` r
 library(DBI)
 library(duckdb)
 library(tidyverse)
 library(dbplyr)
+
+con <- dbConnect(duckdb(), ...)
+
+# Con now is a connection to a full database, with 
+# multiple schemas, tables and views. 
+
+my_data <- tbl(con, 'employees')
 ```
 
 On the other hand if you use DuckDB to read bare files and won’t use
@@ -370,9 +380,13 @@ dbConnect(), dbDisconnect(), etc. you’ll use:
 ``` r
 library(tidyverse)
 library(duckplyr)
+
+my_data <- read_parquet_duckdb("data/employees.parquet")
 ```
 
 We’ll cover each case in more detail below.
+
+## dbplyr
 
 **dbplyr** pushes **dplyr** semantics such as `filter()`, `group_by()`,
 and `summarize()` down to the DB, converting them to SQL for you.
@@ -381,7 +395,6 @@ Results are “lazy.” That is, you can express your data set as if you
 were getting a data frame but until you call `collect()`, the data never
 leaves the duck.
 
-Half of the performance value of using duckdb comes from using dbplyr.
 Explanations from here on are best done in code comments, below.
 
 ``` r
@@ -433,32 +446,12 @@ You may ask “can’t I do this all with R?” and of course you can, but in
 this example we leveraged DuckDB for the filtering and join while
 staying within dplyr semantics.
 
-## dbplyr and Temp Tables
+## duckplyr
 
-As we mentioned above, using views which have long compute times may be
-painful and leave you wanting to use a temporary table. Let’s convert
-`df_temp`, above, to be backed by a temp table by adding `collect()`:
-
-``` r
-df_temp <- tbl(con_rw, "my_view") %>%
-  filter(state='TX') %>%
-  left_join(zip_codes, by="code") %>%
-  collect()
-```
-
-When you call `compute()` you materialize the data set but to a temp
-table instead of a data frame. The point is, again, to let DuckDB handle
-large dataset manipulation and storage.
-
-**Takeaway:** Converting a result to a temp table is one line of code.
-Don’t over think it. You can always go back and use temp tables when you
-feel the pain.
-
-# duckplyr
-
-Duckplyr is meant to function as dbplyr for external **files** as
-opposed to a **Database.** Think especially parquet files but also CSV
-and JSON. A key difference is the clas of objects you work with.
+As we mention above, Duckplyr is meant to function like dbplyr for
+external **files** as opposed to a **Database.** Think especially
+parquet files but also CSV and JSON. A key difference is the clas of
+objects you work with.
 
 - dbplyr::tbl() returns a tbl_dbi.
 - duckplyr::read_xxx_duckdb() returns a duckdb_relation.
@@ -504,6 +497,33 @@ Dbplyr and duckplyr can happily coexist. For instance, you can maintain
 a DuckDB instance, and use duckplyr to ingest parquet tiles. Easy peasy.
 The only “problem” is that joins across different object types (tbl_dbi
 vs. duckdb_tbl) will force materialization into R.
+
+## Temp Tables
+
+As we mentioned above, using views which have long compute times may be
+painful and leave you wanting to use a temporary table. Both `dbplyr`
+and `duckplyr` allow for the creation of temp tables but we’ll focus on
+`dbplyr here. Let's create a view for`df_temp`to be backed by a temp table by adding`compute()\`:
+
+``` r
+df_temp <- tbl(con_rw, "my_view") %>%
+  filter(state='TX') %>%
+  left_join(zip_codes, by="code") %>%
+  compute()
+```
+
+When you call `compute()` you materialize the data set but to a temp
+table instead of a data frame. The point is, again, to let DuckDB handle
+large dataset manipulation and storage.
+
+By doing this you accomplish this:
+
+- Control when and how many times the data for df_temp is computed
+- Keep the resulting data in the db until you are ready for it.
+
+**Takeaway:** Converting a result to a temp table is one line of code.
+Don’t over think it. You can always go back and use temp tables when you
+feel the pain.
 
 # RStudio Connections Panel Hiccups
 
