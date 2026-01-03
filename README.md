@@ -18,15 +18,16 @@ scientists. Our data complexity often progresses from using CSV files
 then RDS files and finally OMG, this is a lot of data in a lot of
 tables!
 
-There are generally speaking, two major use cases for DuckDB:
+There are generally speaking, three major use cases for DuckDB:
 
 - You need to create and maintain an analytics database (OLAP) and
   analyze it with R.
 - You have a lot of large files, especially parquet files, and you need
   to reduce the effort and time needed to read and process them.
+- Using DuckDB as an intermediary between R and Postgres.
 
 These cases are so different there are data scientists who are unaware
-that both exist, but it is this flexibility that has accelerated the
+that each exist, but it is this flexibility that has accelerated the
 adoption of DuckDB. It is much more than merely a fast version of
 SQLite.
 
@@ -524,6 +525,58 @@ By doing this you accomplish this:
 **Takeaway:** Converting a result to a temp table is one line of code.
 Don’t over think it. You can always go back and use temp tables when you
 feel the pain.
+
+# DuckDB with Postgres
+
+Now that we’ve covered dbplyr and all the benefits we can more fully
+discuss how DuckDB can accelerate access to Postgres. The reason this is
+faster than using raw Postgres via `RPostgres` is that DuckDB creates a
+local columnar, parallel access cache.
+
+``` r
+library(DBI)
+library(duckdb)
+
+# start DuckDB (in-memory or file-backed)
+con <- dbConnect(duckdb::duckdb(), dbdir = "analytics.duckdb")
+
+# enable Postgres support
+dbExecute(con, "INSTALL postgres; LOAD postgres;")
+
+# attach Postgres database
+dbExecute(con, "
+  ATTACH 'dbname=mydb host=localhost user=myuser password=mypw'
+  AS pg (TYPE postgres);
+")
+
+# query Postgres table directly
+df <- dbGetQuery(con, "
+  SELECT *
+  FROM pg.public.my_table
+  WHERE created_at >= DATE '2024-01-01'
+")
+
+# As above but using dbplyr
+df_tbl <- tbl(con, "pg.public.my_table") %>%
+  filter(created_at >= DATE '2024-01-01') 
+
+dbDisconnect(con, shutdown = TRUE)
+```
+
+Intuitively we would understand that DuckDB can’t pull data any faster
+than Postgres can produce it, and we’d be correct. The cases when you
+are better off using DuckDB are when you have large row counts and:
+
+- Aggregations
+- Window functions
+- Joins
+- Common Table Expressions (CTEs)
+- Complex expressions such as computed coluns, CASE statements, etc.
+
+In these cases, DuckDB’s columnn store and parallel execution can really
+speed things up. If you plan to reuse this data consider materializing
+it into at least a temp table if not a local Duck instance or parquet
+file.
 
 # RStudio Connections Panel Hiccups
 
