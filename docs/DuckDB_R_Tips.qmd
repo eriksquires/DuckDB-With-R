@@ -13,15 +13,15 @@ This guide is tailored to those of you who are [DuckDB](https://duckdb.org/) use
 
 DuckDB is a very powerful in process database engine and data utility. It's speed, full db features, ease of connection and ability to chew through very large data sets makes it an ideal companion to data scientists. Our data complexity often progresses from using CSV files then RDS files and finally OMG, this is a lot of data in a lot of tables!
 
-There are generally speaking, three major use cases for DuckDB: 
+There are, generally speaking, three major use cases for DuckDB: 
 
-- You need to create and maintain an analytics database (OLAP) and analyze it with R.
-- You have a lot of large files, especially parquet files, and you need to reduce the effort and time needed to read and process them. 
-- Using DuckDB as an intermediary between R and Postgres.
+- Create and maintain an analytics database (OLAP) and analyze it with R.
+- Process large or many files, especially parquet files.
+- Accelerate data aggregation / processing from a remote DB.
 
-These cases are so different there are data scientists who are unaware that each exist, but it is this flexibility that has accelerated the adoption of DuckDB. It is much more than merely a fast version of SQLite. 
+These cases are so different there are data scientists who are only one of these exists, and it is this flexibility that has pushed the adoption of DuckDB. Clearly DuckDB is much more than merely a fast version of SQLite.  In all these cases DuckDB makes our lives easier while minimizing the R memory footprint. 
 
-My own experience was centered on the first use case. At Uber, my work involved querying their data lake through a custom SQL wrapper, exploratory research and forecast developement. Even though Uber has an amazing data lake infrastructure it was not ready for my forecast use cases, and it was hard to convince others of a need for an OLAP specific schema for my team. Billions of rows of data inserted per hour per table in addition to heavy internal usage made even basic queries painfully slow.  It was impossible to learn the dataset the way I needed to from the data lake alone. Using DuckDB to create a custom OLAP DB which fit on my laptop in a single file was priceless and the single most important accelerator to my work there.
+My own experience was centered on my own OLAP DB. At Uber, my work involved querying their data lake through a custom SQL wrapper, exploratory research and forecast development. Even though Uber has an amazing data lake infrastructure it was not ready for my forecast use cases, and it was hard to convince others of a need for an OLAP specific schema for my team. Billions of rows of data inserted per hour per table in addition to heavy internal usage made even basic queries painfully slow.  It was impossible to learn the dataset the way I needed to from the data lake alone. Using DuckDB to create a custom OLAP DB which fit on my laptop in a single file was priceless and the single most important accelerator to my work there.  Besides myself there were several other data scientists leveraging DuckDB for Parquet file processing though mostyl in Python. 
 
 For this reason I focus a great deal on the care, feeding and use of a DuckDB instance, but this is clearly not how everyone uses DuckDB.  If your data is already on files and you do not need to incrementally grow or migrate your data then you may safely skip the sections on **Concurrency**, **dbplyr** and **Data Migration**.
 
