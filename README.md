@@ -461,10 +461,7 @@ opposed to a **Database.** Think especially parquet files but also CSV
 and JSON. A key difference is the clas of objects you work with.
 
 - dbplyr::tbl() returns a tbl_dbi.
-- duckplyr::read_xxx_duckdb() return a duckdb_tbl.
-
-Think of a duckdb_tibble as a tibble that is backed by DuckDB instead of
-a pure R tibble or data frame.
+- duckplyr::read_xxx_duckdb() returns a duckdb_relation.
 
 Example:
 
