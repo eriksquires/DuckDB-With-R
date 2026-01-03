@@ -9,7 +9,7 @@ challenges as your projects grow in complexity. If you find yourself
 writing multiple scripts and/or multiple function libraries which access
 DuckDB data I think you’ll find my observations and tips useful.
 
-# DuckDB or Other?
+# DuckDB Use Cases
 
 DuckDB is a very powerful in process database engine and data utility.
 It’s speed, full db features, ease of connection and ability to chew
@@ -50,6 +50,8 @@ DuckDB instance, but this is clearly not how everyone uses DuckDB. If
 your data is already on files and you do not need to incrementally grow
 or migrate your data then you may safely skip the sections on
 **Concurrency**, **dbplyr** and **Data Migration**.
+
+# DuckDB as Your Laptop DB
 
 DuckDB can often be a full-feature replacement for what we would do in a
 corporate managed RDBMS. We can argue performance, but for me the real
@@ -448,6 +450,52 @@ dbDisconnect(con_rw)
 You may ask “can’t I do this all with R?” and of course you can, but in
 this example we leveraged DuckDB for the filtering and join while
 staying within dplyr semantics.
+
+### Translation Dictionary
+
+`dbplyr` has a couple of features to help you understand what’s going on
+behind the hood. The first is `show_query()` which will show you all the
+SQL that would be executed on `collect()`. The other is a little more
+complicated but you can get a full listing of the verbs which dbplyr
+with the current DB backend know how to translate:
+
+``` r
+library(dbplyr)
+library(duckdb)
+
+con <- DBI::dbConnect(duckdb::duckdb())
+trans <- sql_translation(con)
+names(trans$scalar)
+names(trans$aggregate)
+names(trans$window)
+```
+
+### SQL Weaving
+
+While dbplyr is amazingly versatile and seems to do many things
+automatically, you sometimes need to help it when you know the SQL you
+need to execute but dbplyr can’t figure it out. There are two easy ways
+to weave SQL into your dbplyr statements.
+
+You can use DB functions directly, even if they are not in the
+dictionary, like this:
+
+``` r
+
+# Recommended to use all caps for func names
+tbl(con, "t") %>% mutate(x = MY_DB_FUNC(y, z))
+# generates: MY_DB_FUNC(`y`, `z`)
+```
+
+You can also use `sql()` to directly inject specific SQL in your dbplyr:
+
+``` r
+tbl(con, "my_table") %>%
+  mutate(z = sql("CAST(x AS FLOAT)")) %>%
+  filter(sql("x LIKE '%foo%'"))
+```
+
+Of course doing this we run the risk of making our code less portable.
 
 ## duckplyr
 

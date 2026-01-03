@@ -9,7 +9,7 @@ editor: visual
 
 This guide is tailored to those of you who are [DuckDB](https://duckdb.org/) users or DuckDB-curious and who are facing challenges as your projects grow in complexity. If you find yourself writing multiple scripts and/or multiple function libraries which access DuckDB data I think you'll find my observations and tips useful.
 
-# DuckDB or Other?
+# DuckDB Use Cases
 
 DuckDB is a very powerful in process database engine and data utility. It's speed, full db features, ease of connection and ability to chew through very large data sets makes it an ideal companion to data scientists. Our data complexity often progresses from using CSV files then RDS files and finally OMG, this is a lot of data in a lot of tables!
 
@@ -24,6 +24,8 @@ These cases are so different there are data scientists who are only one of these
 My own experience was centered on my own OLAP DB. At Uber, my work involved querying their data lake through a custom SQL wrapper, exploratory research and forecast development. Even though Uber has an amazing data lake infrastructure it was not ready for my forecast use cases, and it was hard to convince others of a need for an OLAP specific schema for my team. Billions of rows of data inserted per hour per table in addition to heavy internal usage made even basic queries painfully slow.  It was impossible to learn the dataset the way I needed to from the data lake alone. Using DuckDB to create a custom OLAP DB which fit on my laptop in a single file was priceless and the single most important accelerator to my work there.  Besides myself there were several other data scientists leveraging DuckDB for Parquet file processing though mostyl in Python. 
 
 For this reason I focus a great deal on the care, feeding and use of a DuckDB instance, but this is clearly not how everyone uses DuckDB.  If your data is already on files and you do not need to incrementally grow or migrate your data then you may safely skip the sections on **Concurrency**, **dbplyr** and **Data Migration**.
+
+# DuckDB as Your Laptop DB
 
 DuckDB can often be a full-feature replacement for what we would do in a corporate managed RDBMS. We can argue performance, but for me the real benefits are the configuration and set up time. If you already have a Postgres DB (or any other externally managed SQL datastore) and want to keep using it, please go ahead. Where DuckDB shines is in going from zero to OLAP DB in a single line of R code. Users? Privileges? Haha! We don't need no stinking user accounts. Tablespaces? Hahaha, that's what we call the db file. Growth management... why? You need backups? Google Drive!!
 
@@ -315,6 +317,44 @@ dbDisconnect(con_rw)
 ```
 
 You may ask "can't I do this all with R?" and of course you can, but in this example we leveraged DuckDB for the filtering and join while staying within dplyr semantics.
+
+### Translation Dictionary
+
+`dbplyr` has a couple of features to help you understand what's going on behind the hood.  The first is `show_query()` which will show you all the SQL that would be executed on `collect()`.  The other is a little more complicated but you can get a full listing of the verbs which dbplyr with the current DB backend know how to translate: 
+
+```r
+library(dbplyr)
+library(duckdb)
+
+con <- DBI::dbConnect(duckdb::duckdb())
+trans <- sql_translation(con)
+names(trans$scalar)
+names(trans$aggregate)
+names(trans$window)
+```
+
+### SQL Weaving
+
+While dbplyr is amazingly versatile and seems to do many things automatically, you sometimes need to help it when you know the SQL you need to execute but dbplyr can't figure it out. There are two easy ways to weave SQL into your dbplyr statements. 
+
+You can use DB functions directly, even if they are not in the dictionary, like this: 
+
+```r
+
+# Recommended to use all caps for func names
+tbl(con, "t") %>% mutate(x = MY_DB_FUNC(y, z))
+# generates: MY_DB_FUNC(`y`, `z`)
+```
+
+You can also use `sql()` to directly inject specific SQL in your dbplyr:
+
+```r 
+tbl(con, "my_table") %>%
+  mutate(z = sql("CAST(x AS FLOAT)")) %>%
+  filter(sql("x LIKE '%foo%'"))
+```
+
+Of course doing this we run the risk of making our code less portable. 
 
 ## duckplyr
 
