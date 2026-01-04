@@ -18,12 +18,13 @@ scientists. Our data complexity often progresses from using CSV files
 then RDS files and finally OMG, this is a lot of data in a lot of
 tables!
 
-There are, generally speaking, three major use cases for DuckDB:
+There are, generally speaking, four major use cases for DuckDB:
 
 - Create and maintain an analytics database (OLAP) and analyze it with
   R.
 - Process large or many files, especially parquet files.
 - Accelerate data aggregation / processing from a remote DB.
+- Use DuckDB as a hub for mulitple external DBs
 
 These cases are so different there are data scientists who are only one
 of these exists, and it is this flexibility that has pushed the adoption
@@ -582,10 +583,14 @@ feel the pain.
 Now that we’ve covered dbplyr and all the benefits we can more fully
 discuss how DuckDB can accelerate access to Postgres, MySQL or any ODBC
 connected DB. We’ll use Postgres as an example because the performance
-improvements are well documented.
+improvements are well documented. There are two big reasons for doing
+this:
 
-Using DuckDB as an intermediary can be faster when you can take
-advantage of it’s column store and parallel execution engine.
+- Using DuckDB as an intermediary can be faster when you can take
+  advantage of it’s column store and parallel execution engine.
+- By attaching multiple remote DBs to a single DuckDB instance you can
+  join data across them easily. This is the hub use case we discussed in
+  the introduction.
 
 Intuitively we would understand that DuckDB can’t pull data any faster
 than Postgres can produce it, and we’d be correct. It’s the compute time

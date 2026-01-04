@@ -13,11 +13,12 @@ This guide is tailored to those of you who are [DuckDB](https://duckdb.org/) use
 
 DuckDB is a very powerful in process database engine and data utility. It's speed, full db features, ease of connection and ability to chew through very large data sets makes it an ideal companion to data scientists. Our data complexity often progresses from using CSV files then RDS files and finally OMG, this is a lot of data in a lot of tables!
 
-There are, generally speaking, three major use cases for DuckDB: 
+There are, generally speaking, four major use cases for DuckDB: 
 
 - Create and maintain an analytics database (OLAP) and analyze it with R.
 - Process large or many files, especially parquet files.
 - Accelerate data aggregation / processing from a remote DB.
+- Use DuckDB as a hub for mulitple external DBs
 
 These cases are so different there are data scientists who are only one of these exists, and it is this flexibility that has pushed the adoption of DuckDB. Clearly DuckDB is much more than merely a fast version of SQLite.  In all these cases DuckDB makes our lives easier while minimizing the R memory footprint. 
 
@@ -415,9 +416,10 @@ By doing this you accomplish this:
 
 # DuckDB with a Remote DB
 
-Now that we've covered dbplyr and all the benefits we can more fully discuss how DuckDB can accelerate access to Postgres, MySQL or any ODBC connected DB.  We'll use Postgres as an example because the performance improvements are well documented. 
+Now that we've covered dbplyr and all the benefits we can more fully discuss how DuckDB can accelerate access to Postgres, MySQL or any ODBC connected DB.  We'll use Postgres as an example because the performance improvements are well documented. There are two big reasons for doing this: 
 
-Using DuckDB as an intermediary can be faster when you can take advantage of it's column store and parallel execution engine. 
+- Using DuckDB as an intermediary can be faster when you can take advantage of it's column store and parallel execution engine. 
+- By attaching multiple remote DBs to a single DuckDB instance you can join data across them easily.  This is the hub use case we discussed in the introduction. 
 
 Intuitively we would understand that DuckDB can't pull data any faster than Postgres can produce it, and we'd be correct. It's the compute time that DuckDB can shorten significantly.  This happens when you have large row counts and: 
 
