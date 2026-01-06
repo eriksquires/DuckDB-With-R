@@ -712,28 +712,35 @@ often done with custom ETL scripts (in python, R, Perl, bash, Ruby,
 etc.) which read from external databases, files, hold the results in
 memory and push them into another DB. While this is a very common
 approach it does have some downsides. Custom ETL scripts are often
-brittle, require maintenance and monitoring, and can be difficult to
-share with colleagues.
+brittle, require maintenance, upgrading and monitoring, and can be
+difficult to share with colleagues.
 
-Before writing and maintaining ETL scripts you should consider that most
-modern RDBMS systems usually include extensions to read external
-databases directly. DuckDB for instance can connect to remote DBs
-(postgres, mysql, etc), files (parquet, csv, etc.) and remote sources
-via httpfs. These may eliminate the initial need to do an external ETL
-and keep your work 100% inside of DuckDB and by extension in dbt.
-Postgres, as an example, has a Foreign Data Wrapper which serves this
-purpose nicely.
+To be clear I’m specifically discussing 3rd party scripting which uses
+some sort of DBI, JDBC, ODBC interface to pull data out of system A and
+push it into system B.
+
+Before writing and maintaining these sorts of external ETL scripts you
+should consider that most modern RDBMS systems usually include
+extensions to read external databases directly. DuckDB for instance can
+connect to remote DBs (postgres, mysql, etc), files (parquet, csv, etc.)
+and remote sources via httpfs. These may eliminate the initial need to
+do an external ETL and keep your work 100% inside of DuckDB and by
+extension in dbt. Postgres, as an example, has a Foreign Data Wrapper
+which serves this purpose nicely.
+
+To be clear, I’m not saying not to migrate data. I’m saying to rely on
+DB to DB connections as much as possible.
 
 Regardless of your data lake or desktop DB these options are all worth
 considering before reinventing the wheel with custom, brittle ETL
-scripts. I cannot stress this enough: **Data Connections are much more
-reliable and less maintenance than external, script driven (python,
-bash, Perl, R) ETL jobs.**
+scripts. I cannot stress this enough: **Writing scripts which rely on DB
+to DB Connections are much more reliable and less maintenance than
+external, script driven (python, bash, Perl, R) ETL jobs.**
 
 Truthfully you won’t always be able to avoid maintaining your own ETL
 jobs. Sometimes that’s the fastest route to getting results, but it’s
-worth stopping to ask your colleagues what options exist before you dive
-in.
+worth stopping to ask your colleagues what connectivity options exist
+before you dive in.
 
 ## Maybe don’t use R for Data Transformation
 
