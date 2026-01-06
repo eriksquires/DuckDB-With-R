@@ -11,20 +11,20 @@ This guide is tailored to those of you who are [DuckDB](https://duckdb.org/) use
 
 # DuckDB Use Cases
 
-DuckDB is a very powerful in process database engine and data utility. It's speed, full db features, ease of connection and ability to chew through very large data sets makes it an ideal companion to data scientists. Our data complexity often progresses from using CSV files then RDS files and finally OMG, this is a lot of data in a lot of tables!
+DuckDB is a very powerful in process database engine and data utility. It's speed, full db features, ease of connection and ability to chew through very large data sets makes it an ideal companion to data scientists. Our data complexity often progresses from CSV files to RDS files and finally to OMG, this is a lot of data in a lot of tables!
 
-There are, generally speaking, four major use cases for DuckDB: 
+There are, generally speaking, four major use cases for DuckDB:
 
-- Create and maintain an analytics database (OLAP) and analyze it with R.
-- Process large or many files, especially parquet files.
-- Accelerate data aggregation / processing from a remote DB.
-- Use DuckDB as a hub for mulitple external DBs
+-   Create and maintain an analytics database (OLAP) for use with R.
+-   Process large or many files, especially parquet files.
+-   Accelerate data aggregation / processing from a remote DB.
+-   Use DuckDB as a hub for multiple external DBs
 
-These cases are so different there are data scientists who are only one of these exists, and it is this flexibility that has pushed the adoption of DuckDB. Clearly DuckDB is much more than merely a fast version of SQLite.  In all these cases DuckDB makes our lives easier while minimizing the R memory footprint. 
+These cases are so different there are data scientists who are only aware of one of these but it is this flexibility that has pushed the adoption of DuckDB. Clearly DuckDB is much more than merely a fast version of SQLite. In all these cases DuckDB accelerates analysis while minimizing the R memory footprint and time spent managing data in R.
 
-My own experience was centered on my own OLAP DB. At Uber, my work involved querying their data lake through a custom SQL wrapper, exploratory research and forecast development. Even though Uber has an amazing data lake infrastructure it was not ready for my forecast use cases, and it was hard to convince others of a need for an OLAP specific schema for my team. Billions of rows of data inserted per hour per table in addition to heavy internal usage made even basic queries painfully slow.  It was impossible to learn the dataset the way I needed to from the data lake alone. Using DuckDB to create a custom OLAP DB which fit on my laptop in a single file was priceless and the single most important accelerator to my work there.  Besides myself there were several other data scientists leveraging DuckDB for Parquet file processing though mostyl in Python. 
+My own experience was centered on my own OLAP DB. At Uber, my work involved querying their data lake through a custom SQL wrapper, exploratory research and forecast development. Even though Uber has an amazing data lake infrastructure it was not ready for my forecast use cases, and it was hard to convince others of a need for an OLAP specific schema for my team. Billions of rows of data inserted per hour per table in addition to heavy internal usage made even basic queries painfully slow. It was impossible to learn the dataset the way I needed to from the data lake alone but using DuckDB to create a custom OLAP DB which fit on my laptop in a single file was priceless and the single most important accelerator to my work there. Besides myself there were several other data scientists leveraging DuckDB for Parquet file processing though mostly in Python.
 
-For this reason I focus a great deal on the care, feeding and use of a DuckDB instance, but this is clearly not how everyone uses DuckDB.  If your data is already on files and you do not need to incrementally grow or migrate your data then you may safely skip the sections on **Concurrency**, **dbplyr** and **Data Migration**.
+For this reason I focus a great deal on the care, feeding and use of a DuckDB instance, but this is clearly not how everyone uses DuckDB. If your data is already on files and you do not need to incrementally grow or migrate your data then you may safely skip the sections on **Concurrency**, **dbplyr** and **Data Migration**.
 
 # DuckDB as Your Laptop DB
 
@@ -57,8 +57,8 @@ You may ask, why not just keep all my forecasts in one R project. They were pret
 Though I only had a single db copy I used a soft link in each R project folder, which I demonstrate below. Make sure to add **\*\*/db/** to .gitignore so your git commits don't accidentally commit the whole db.
 
 ``` bash
-$ cd /dev/my_r_project
-$ ln -s ~/db .
+cd /dev/my_r_project
+ln -s ~/db .
 ```
 
 At about 10 GB, the DB was manageable, and transferable but definitely too large for git.
@@ -227,7 +227,6 @@ dbExecute(con_rw, "CREATE OR REPLACE TABLE cached_view as SELECT * FROM my_view
 # Creates a temporary table, but only visible to this connection instance.
 dbExecute(con_rw, "CREATE TEMP TABLE my_temp as SELECT * FROM my_view 
           WHERE state = 'TX'")
-
 ```
 
 A **temporary table** is a real disk-backed table in the DB which exists only in the scope of your connection. No other connection can see it, and when the connection closes it vanishes into thin air. Temp tables are incredibly useful constructs as they let us create large working data sets entirely in the database, before bringing subsets into R for analysis. This can save you time recomputing the view as well as let you keep very large result sets in the DB until you are ready for them.
@@ -235,13 +234,14 @@ A **temporary table** is a real disk-backed table in the DB which exists only in
 We'll discuss how to leverage views even more in the section on dbplyr, below.
 
 # dbplyr vs. duckplyr
-These two packages overlap because they can both bring DuckDB features to dplyr semantics, but for different use cases.  
 
-We'll cover each in depth but since the names are confusing we should compare and contrast them. dbplyr is part of the [tidyverse toolset](https://dbplyr.tidyverse.org/), as opposed to duckplyr and is a generic tool for SQL backed databases, including duckdb.  `duckplyr` tries to extend this same idea to **files** instead of databases by using DuckDB between R and your files. Using either can be a big performance improvement but for different reasons.
+These two packages overlap because they can both bring DuckDB features to dplyr semantics, but for different use cases.
 
-It's easier to show you than explain.  If you have a DuckDB database, or want to create one you'll use these libraries:
+We'll cover each in depth but since the names are confusing we should compare and contrast them. dbplyr is part of the [tidyverse toolset](https://dbplyr.tidyverse.org/), as opposed to duckplyr and is a generic tool for SQL backed databases, including duckdb. `duckplyr` tries to extend this same idea to **files** instead of databases by using DuckDB between R and your files. Using either can be a big performance improvement but for different reasons.
 
-```r
+It's easier to show you than explain. If you have a DuckDB database, or want to create one you'll use these libraries:
+
+``` r
 library(DBI)
 library(duckdb)
 library(tidyverse)
@@ -255,16 +255,16 @@ con <- dbConnect(duckdb(), ...)
 my_data <- tbl(con, 'employees')
 ```
 
-On the other hand if you use DuckDB to read bare files and won't use dbConnect(), dbDisconnect(), etc. you'll use: 
+On the other hand if you use DuckDB to read bare files and won't use dbConnect(), dbDisconnect(), etc. you'll use:
 
-```r
+``` r
 library(tidyverse)
 library(duckplyr)
 
 my_data <- read_parquet_duckdb("data/employees.parquet")
 ```
 
-We'll cover each case in more detail below. 
+We'll cover each case in more detail below.
 
 ## dbplyr
 
@@ -321,9 +321,9 @@ You may ask "can't I do this all with R?" and of course you can, but in this exa
 
 ### Translation Dictionary
 
-`dbplyr` has a couple of features to help you understand what's going on behind the hood.  The first is `show_query()` which will show you all the SQL that would be executed on `collect()`.  The other is a little more complicated but you can get a full listing of the verbs which dbplyr with the current DB backend know how to translate: 
+`dbplyr` has a couple of features to help you understand what's going on behind the hood. The first is `show_query()` which will show you all the SQL that would be executed on `collect()`. The other is a little more complicated but you can get a full listing of the verbs which dbplyr with the current DB backend know how to translate:
 
-```r
+``` r
 library(dbplyr)
 library(duckdb)
 
@@ -336,11 +336,11 @@ names(trans$window)
 
 ### SQL Weaving
 
-While dbplyr is amazingly versatile and seems to do many things automatically, you sometimes need to help it when you know the SQL you need to execute but dbplyr can't figure it out. There are two easy ways to weave SQL into your dbplyr statements. 
+While dbplyr is amazingly versatile and seems to do many things automatically, you sometimes need to help it when you know the SQL you need to execute but dbplyr can't figure it out. There are two easy ways to weave SQL into your dbplyr statements.
 
-You can use DB functions directly, even if they are not in the dictionary, like this: 
+You can use DB functions directly, even if they are not in the dictionary, like this:
 
-```r
+``` r
 
 # Recommended to use all caps for func names
 tbl(con, "t") %>% mutate(x = MY_DB_FUNC(y, z))
@@ -349,21 +349,20 @@ tbl(con, "t") %>% mutate(x = MY_DB_FUNC(y, z))
 
 You can also use `sql()` or `sql_expr()` to directly inject specific SQL in your dbplyr:
 
-```r 
+``` r
 tbl(con, "my_table") %>%
   mutate(z = sql("CAST(x AS FLOAT)")) %>%
   filter(sql("x LIKE '%foo%'"))
 ```
 
-Of course doing this we run the risk of making our code less portable. 
+Of course doing this we run the risk of making our code less portable.
 
 ## duckplyr
 
 As we mention above, Duckplyr is meant to function like dbplyr for external **files** as opposed to a **Database.** Think especially parquet files but also CSV and JSON. A key difference is the clas of objects you work with.
 
-- dbplyr::tbl() returns a tbl_dbi. 
-- duckplyr::read_xxx_duckdb() returns a duckdb_relation. 
-
+-   dbplyr::tbl() returns a tbl_dbi.
+-   duckplyr::read_xxx_duckdb() returns a duckdb_relation.
 
 Example:
 
@@ -382,21 +381,21 @@ payroll <- employees %>%
 # Use employees, salary and payroll like any other data frame. 
 ```
 
-Another powerful use of `duckplyr` is the use of globs to access data in multiple files.  Imagine you have files in `data/sales` per month and store.  Something like this:  `data/sales/2025_06_Atlanta01.parquet`. DuckDB will let us conceptutally concatenate them together with one line: 
+Another powerful use of `duckplyr` is the use of globs to access data in multiple files. Imagine you have files in `data/sales` per month and store. Something like this: `data/sales/2025_06_Atlanta01.parquet`. DuckDB will let us conceptutally concatenate them together with one line:
 
 ``` r
 sales_2025 <- read_parquet_duckdb("data/sales/2025_*.parquet")
 ```
 
-So long as your file schema is homogeneous you'll get a single, db backed object without having to ingest it all yet.  While `dbplyr` creates a SQL query, `duckplyr` creates a file read and filter plan. The nuances and rules for when each actually pulls data into R are too nuanced for us here. 
+So long as your file schema is homogeneous you'll get a single, db backed object without having to ingest it all yet. While `dbplyr` creates a SQL query, `duckplyr` creates a file read and filter plan. The nuances and rules for when each actually pulls data into R are too nuanced for us here.
 
 Obviously, duckdb is overkill for a CSV file with 4 columns and a couple of thousand rows in a couple of files. It's when your dataset is large, files are many and want to keep dplyr semantics that duckplyr shines.
 
-Dbplyr and duckplyr can happily coexist.  For instance, you can maintain a DuckDB instance, and use duckplyr to ingest parquet tiles.  Easy peasy. The only "problem" is that joins across different object types (tbl_dbi vs. duckdb_tbl) will force materialization into R.  
+Dbplyr and duckplyr can happily coexist. For instance, you can maintain a DuckDB instance, and use duckplyr to ingest parquet tiles. Easy peasy. The only "problem" is that joins across different object types (tbl_dbi vs. duckdb_tbl) will force materialization into R.
 
 ## Temp Tables
 
-As we mentioned above, using views which have long compute times may be painful and leave you wanting to use a temporary table. Both `dbplyr` and `duckplyr` allow for the creation of temp tables but we'll focus on `dbplyr here. Let's create a view for `df_temp` to be backed by a temp table by adding `compute()`:
+As we mentioned above, using views which have long compute times may be painful and leave you wanting to use a temporary table. Both `dbplyr` and `duckplyr` allow for the creation of temp tables but we'll focus on `dbplyr here. Let's create a view for`df_temp`to be backed by a temp table by adding`compute()\`:
 
 ``` r
 df_temp <- tbl(con_rw, "my_view") %>%
@@ -409,31 +408,31 @@ When you call `compute()` you materialize the data set but to a temp table inste
 
 By doing this you accomplish this:
 
-- Control when and how many times the data for df_temp is computed
-- Keep the resulting data in the db until you are ready for it. 
+-   Control when and how many times the data for df_temp is computed
+-   Keep the resulting data in the db until you are ready for it.
 
 **Takeaway:** Converting a result to a temp table is one line of code. Don't over think it. You can always go back and use temp tables when you feel the pain.
 
 # DuckDB with a Remote DB
 
-Now that we've covered dbplyr and all the benefits we can more fully discuss how DuckDB can accelerate access to Postgres, MySQL or any ODBC connected DB.  We'll use Postgres as an example because the performance improvements are well documented. There are two big reasons for doing this: 
+Now that we've covered dbplyr and all the benefits we can more fully discuss how DuckDB can accelerate access to Postgres, MySQL or any ODBC connected DB. We'll use Postgres as an example because the performance improvements are well documented. There are two big reasons for doing this:
 
-- Using DuckDB as an intermediary can be faster when you can take advantage of it's column store and parallel execution engine. 
-- By attaching multiple remote DBs to a single DuckDB instance you can join data across them easily.  This is the hub use case we discussed in the introduction. 
+-   Using DuckDB as an intermediary can be faster when you can take advantage of it's column store and parallel execution engine.
+-   By attaching multiple remote DBs to a single DuckDB instance you can join data across them easily. This is the hub use case we discussed in the introduction.
 
-Intuitively we would understand that DuckDB can't pull data any faster than Postgres can produce it, and we'd be correct. It's the compute time that DuckDB can shorten significantly.  This happens when you have large row counts and: 
+Intuitively we would understand that DuckDB can't pull data any faster than Postgres can produce it, and we'd be correct. It's the compute time that DuckDB can shorten significantly. This happens when you have large row counts and:
 
-- Aggregations
-- Window functions
-- Joins
-- Common Table Expressions (CTEs)
-- Complex expressions such as computed coluns, CASE statements, etc. 
+-   Aggregations
+-   Window functions
+-   Joins
+-   Common Table Expressions (CTEs)
+-   Complex expressions such as computed coluns, CASE statements, etc.
 
 In these cases, DuckDB's columnn store and parallel execution can really speed things up. If you plan to reuse this data consider materializing it into at least a temp table if not a local Duck instance or parquet file.
 
 The key here is you let DuckDB attach to the remote instead of trying to do so with R. We show a trivial examples of connecting to a remote Postgres DB via DuckDB below.
 
-```r
+``` r
 library(DBI)
 library(duckdb)
 
@@ -463,7 +462,6 @@ df_tbl <- tbl(con, "pg.public.my_table") %>%
 
 dbDisconnect(con, shutdown = TRUE)
 ```
-
 
 # RStudio Connections Panel Hiccups
 
@@ -503,13 +501,13 @@ df <- dbGetQuery(con, ....)
 
 Kind of related to using duckdb with R is the overall process of data transformation. If you are using duckdb (or any db really) with R you are already involved in extraction and loading or extraction, transformation and loading (ETL). Somehow you have to go from data which comes from a primary source to data which your analysis and analytical models can take advantage of. In addition to the work you care about you may also be responsible for moving the data along to others to use with BI tools instead of R or Python.
 
-The modern data scientist/analytics engineer has to fend for themselves more often than not. It is rare we have the luxury of a data team to just hand us tables on a silver platter. 
+The modern data scientist/analytics engineer has to fend for themselves more often than not. It is rare we have the luxury of a data team to just hand us tables on a silver platter.
 
-In the course of your work you may start with pulling data from a remote source to local files, then you realize you are managing too many files or that the data you need is growing incrementally.  If that is you and you have started going down the road of self sufficiency I have some pointers.
+In the course of your work you may start with pulling data from a remote source to local files, then you realize you are managing too many files or that the data you need is growing incrementally. If that is you and you have started going down the road of self sufficiency I have some pointers.
 
 ## Maybe don't ETL
 
-One of the first things we need to do is get raw, dirty data. This is often done with custom ETL scripts (in python, R, Perl, bash, Ruby, etc.) which read from external databases, files, APIs and other sources and put them somwhere R can get to them. While this is a very common approach it does have some downsides. Custom ETL scripts are often brittle, require maintenance and monitoring, and can be difficult to share with colleagues.
+One of the first things we need to do is get raw, dirty data. This is often done with custom ETL scripts (in python, R, Perl, bash, Ruby, etc.) which read from external databases, files, hold the results in memory and push them into another DB. While this is a very common approach it does have some downsides. Custom ETL scripts are often brittle, require maintenance and monitoring, and can be difficult to share with colleagues.
 
 Before writing and maintaining ETL scripts you should consider that most modern RDBMS systems usually include extensions to read external databases directly. DuckDB for instance can connect to remote DBs (postgres, mysql, etc), files (parquet, csv, etc.) and remote sources via httpfs. These may eliminate the initial need to do an external ETL and keep your work 100% inside of DuckDB and by extension in dbt. Postgres, as an example, has a Foreign Data Wrapper which serves this purpose nicely.
 
@@ -526,9 +524,9 @@ While we've shown how to use dbplyr for data transformation but you should also 
 The big feature of dbt is that it is aware of dependencies between tables and views and will build them in the correct order. This is a big help when you have many interdependent views and tables. This is no longer something you have to bake into your R code. You can also mix R and dbt as needed. Consider a situation when you have to run R in the middle. Let's imagine you are running a forecast, which depends on several upstream tables but there are also a number of financial table that must be updated after the forecast to feed the Business Intelligence (BI) charts. For this example, table C relies on tables A and B. Table D is built by R. The BI tables (E, F, etc) depend on D. You can manage this easily with dbt and R like so:
 
 ``` bash
-$ dbt --select +C        # Builds A, B and C
-$ Rscript run_forecast.R # Depends on A, B and C. Writes D
-$ dbt --select D+        # Builds E, F, etc.
+dbt --select +C        # Builds A, B and C
+Rscript run_forecast.R # Depends on A, B and C. Writes D
+dbt --select D+        # Builds E, F, etc.
 ```
 
 This is a very clean way to manage interleaved R and SQL work. Of course, you also sidestep any concurrency issues. Set dbt threads = 1 in profiles.yml to avoid any possible read/write conflicts, and let dbt manage the ordering of work in the db. I think you will find that building dbt models reduced the amount of work you must do in R (or Python, etc.) with the same reliability and flexibility. When the data governance people come to knock on your door you'll be able to produce a nice lineage graph showing how data flows through your system, as well as documentation in schema.yml.

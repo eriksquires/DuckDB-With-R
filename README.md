@@ -14,23 +14,21 @@ DuckDB data I think you’ll find my observations and tips useful.
 DuckDB is a very powerful in process database engine and data utility.
 It’s speed, full db features, ease of connection and ability to chew
 through very large data sets makes it an ideal companion to data
-scientists. Our data complexity often progresses from using CSV files
-then RDS files and finally OMG, this is a lot of data in a lot of
-tables!
+scientists. Our data complexity often progresses from CSV files to RDS
+files and finally to OMG, this is a lot of data in a lot of tables!
 
 There are, generally speaking, four major use cases for DuckDB:
 
-- Create and maintain an analytics database (OLAP) and analyze it with
-  R.
+- Create and maintain an analytics database (OLAP) for use with R.
 - Process large or many files, especially parquet files.
 - Accelerate data aggregation / processing from a remote DB.
-- Use DuckDB as a hub for mulitple external DBs
+- Use DuckDB as a hub for multiple external DBs
 
-These cases are so different there are data scientists who are only one
-of these exists, and it is this flexibility that has pushed the adoption
-of DuckDB. Clearly DuckDB is much more than merely a fast version of
-SQLite. In all these cases DuckDB makes our lives easier while
-minimizing the R memory footprint.
+These cases are so different there are data scientists who are only
+aware of one of these but it is this flexibility that has pushed the
+adoption of DuckDB. Clearly DuckDB is much more than merely a fast
+version of SQLite. In all these cases DuckDB accelerates analysis while
+minimizing the R memory footprint and time spent managing data in R.
 
 My own experience was centered on my own OLAP DB. At Uber, my work
 involved querying their data lake through a custom SQL wrapper,
@@ -40,11 +38,11 @@ cases, and it was hard to convince others of a need for an OLAP specific
 schema for my team. Billions of rows of data inserted per hour per table
 in addition to heavy internal usage made even basic queries painfully
 slow. It was impossible to learn the dataset the way I needed to from
-the data lake alone. Using DuckDB to create a custom OLAP DB which fit
-on my laptop in a single file was priceless and the single most
+the data lake alone but using DuckDB to create a custom OLAP DB which
+fit on my laptop in a single file was priceless and the single most
 important accelerator to my work there. Besides myself there were
 several other data scientists leveraging DuckDB for Parquet file
-processing though mostyl in Python.
+processing though mostly in Python.
 
 For this reason I focus a great deal on the care, feeding and use of a
 DuckDB instance, but this is clearly not how everyone uses DuckDB. If
@@ -109,8 +107,8 @@ folder, which I demonstrate below. Make sure to add **\*\*/db/** to
 .gitignore so your git commits don’t accidentally commit the whole db.
 
 ``` bash
-$ cd /dev/my_r_project
-$ ln -s ~/db .
+cd /dev/my_r_project
+ln -s ~/db .
 ```
 
 At about 10 GB, the DB was manageable, and transferable but definitely
@@ -711,8 +709,8 @@ pointers.
 
 One of the first things we need to do is get raw, dirty data. This is
 often done with custom ETL scripts (in python, R, Perl, bash, Ruby,
-etc.) which read from external databases, files, APIs and other sources
-and put them somwhere R can get to them. While this is a very common
+etc.) which read from external databases, files, hold the results in
+memory and push them into another DB. While this is a very common
 approach it does have some downsides. Custom ETL scripts are often
 brittle, require maintenance and monitoring, and can be difficult to
 share with colleagues.
@@ -764,9 +762,9 @@ and B. Table D is built by R. The BI tables (E, F, etc) depend on D. You
 can manage this easily with dbt and R like so:
 
 ``` bash
-$ dbt --select +C        # Builds A, B and C
-$ Rscript run_forecast.R # Depends on A, B and C. Writes D
-$ dbt --select D+        # Builds E, F, etc.
+dbt --select +C        # Builds A, B and C
+Rscript run_forecast.R # Depends on A, B and C. Writes D
+dbt --select D+        # Builds E, F, etc.
 ```
 
 This is a very clean way to manage interleaved R and SQL work. Of
