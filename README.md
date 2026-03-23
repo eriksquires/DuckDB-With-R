@@ -9,6 +9,9 @@ challenges as your projects grow in complexity. If you find yourself
 writing multiple scripts and/or multiple function libraries which access
 DuckDB data I think you’ll find my observations and tips useful.
 
+I should also point out I've released [HolyDuck](https://github.com/eriksquires/holyduck) which
+puts DuckDB inside of MariaDB and may make sharing DuckDB data much easier. 
+
 # DuckDB Use Cases
 
 DuckDB is a very powerful in process database engine and data utility.
