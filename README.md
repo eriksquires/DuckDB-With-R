@@ -645,47 +645,7 @@ dbDisconnect(con, shutdown = TRUE)
 ```
 
 # RStudio Connections Panel Hiccups
-
-It IS possible to get a valid DBI connection but not have the RStudio
-Connections panel work correctly. The reason is that schema
-introspection methods are tied to the back-end driver package, but are
-not needed for basic DBI functions like dbConnect(), dbGetQuery() or
-dbExecute(). As a result, without `duckdb` (or `RPostgres`) explicitly
-loaded the Connections panel won’t fully populate. The bad part about
-this is there’s no warning message anywhere to tell you that the
-Connections panel is only half working. This is so frustrating because
-as far as you an tell, your database is working, the tables are there
-and you can use your data exactly as expected.
-
-``` r
-library(DBI)
-
-# We use duckdb, but never load duckdb. 
-con <- dbConnect(duckdb::duckdb(), ...)
-
-# The Connections panel will display something, but not everything. 
-# Especially if you use schemas besides the default.
-
-# This will work just fine, without duckdb loaded, relies on DBI alone.
-df <- dbGetQuery(con, ....)
-```
-
-Here’s what you could do instead:
-
-``` r
-library(DBI)
-library(duckdb) # Or whatever your actual DB backend is, like RPostgres
-
-# Same exact connection string, but loading the duckdb (above) ensures the 
-# RStudio Connections panel will work as expected. 
-con <- dbConnect(duckdb::duckdb(), ...)
-
-# Now the Connections panel should show you everything
-# in your Duck DB
-
-# This will work just fine. 
-df <- dbGetQuery(con, ....)
-```
+I've deleted this section since I can't reliably reproduce this well enough. 
 
 # Data Migration Tips
 
